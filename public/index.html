@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Tutor</title>
+</head>
+<body>
+  <h2>Welcome to AI Tutor</h2>
+  <form id="tutorForm">
+    <label>Name: <input type="text" name="name" required></label><br>
+    <label>Subject: <input type="text" name="subject" required></label><br>
+    <label>Grade: <input type="text" name="grade" required></label><br>
+    <label>Topic: <input type="text" name="topic" required></label><br>
+    <button type="submit">Start Chat</button>
+  </form>
+  <div id="chatBox"></div>
+
+  <script>
+    const form = document.getElementById('tutorForm');
+    const chatBox = document.getElementById('chatBox');
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      chatBox.innerHTML = "🤖 Typing...";
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name'),
+        subject: formData.get('subject'),
+        grade: formData.get('grade'),
+        topic: formData.get('topic')
+      };
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      chatBox.innerHTML = `<p>👤 I'm ready for ${data.topic} in ${data.subject}, Grade ${data.grade}.</p><p>🤖 ${result.message}</p>`;
+    };
+  </script>
+</body>
+</html>
