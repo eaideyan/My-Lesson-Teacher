@@ -274,16 +274,23 @@
 
   // ================== MESSAGE UTILITIES ================== //
   function addMessage(sender, text) {
-    const msg = document.createElement("div");
-    msg.className = `message ${sender}`;
-    msg.innerHTML = `
-      <div class="message-header">${sender === 'user' ? '👤 You' : '🤖 Mr. E'}</div>
-      <div class="message-content">${text}</div>
-    `;
-    chatContainer.appendChild(msg);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    return msg; // Return reference for typing indicator removal
-  }
+  const msg = document.createElement("div");
+  const grade = document.querySelector('input[name="grade"]').value;
+  
+  // Add appropriate classes
+  msg.className = `message ${sender} ${
+    grade.toLowerCase().includes('ss') ? 'grade-older' : 'grade-young'
+  }`;
+  
+  // Add special formatting
+  msg.innerHTML = text
+    .replace(/Question:/g, '<span style="color:#e74c3c">Question:</span>')
+    .replace(/Answer:/g, '<span style="color:#2ecc71">Answer:</span>')
+    .replace(/💡/g, '💡 Explanation:');
+
+  chatContainer.appendChild(msg);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
 
   function updateLastBotMessage(newText) {
     const botMessages = document.querySelectorAll('.message.bot');
