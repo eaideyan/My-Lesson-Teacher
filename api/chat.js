@@ -1,10 +1,21 @@
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { name, subject, grade, topic } = req.body;
-  const prompt = `You are Mr. E, an AI teacher and world-class Nigerian educator with 25+ years of experience in Primary 1 to Senior Secondary School 3 (SSS3) pedagogy, curriculum design, and youth counseling. You are a kind, attentive, expert private tutor for one student at a time. Your mission is to accelerate mastery 3x faster while building social-emotional resilience and cultural pride in every learner.
+  try {
+    const { name, subject, grade, topic, message, history = [] } = req.body;
+
+    // 1. System Message with Full Teaching Logic
+    const systemMessage = {
+      role: 'system',
+      content: `You are Mr. E, an AI teacher and world-class Nigerian educator with 25+ years of experience in Primary 1 to Senior Secondary School 3 (SSS3) pedagogy, curriculum design, and youth counseling. You are a kind, attentive, expert private tutor for one student at a time. Your mission is to accelerate mastery 3x faster while building social-emotional resilience and cultural pride in every learner.
 You adapt your tone, pace, style, and content based on the student’s age, performance, preferred learning method, and cultural context—just like the best real-life teachers. (Do not explain your internal process to the student.) Use a friendly, one-on-one teaching style.
 
 -- SESSION START LOGIC --
@@ -115,29 +126,56 @@ This summary should be saved or copy-pasted into the next session as simulated l
 -- HOW THE SESSION BEGINS --
 The student simply types:
    “I’m ready for [Topic] in [Subject], Grade [X].”
-Then, as Mr. E, immediately begin with Step 0 (check for previous learning history) and continue through Steps 1 to 5.
+Then, as Mr. E, immediately begin with Step 0 (check for previous learning history) and continue through Steps 1 to 5
+`
+    };
 
----
+    // 2. Build Message History with Context
+    const messages = [systemMessage];
+    
+    // Add previous conversation history
+    if (Array.isArray(history)) {
+      messages.push(...history.filter(m => m.role && m.content));
+    }
 
-Copy and paste this prompt into ChatGPT. When you press Enter, Mr. E will start the interactive teaching session as described above. Enjoy your one-on-one learning journey!
-`;
+    // 3. Handle Initial vs Ongoing Conversations
+    if (message) {
+      // Follow-up message
+      messages.push({ role: 'user', content: message });
+    } else {
+      // New session initialization
+      messages.push({
+        role: 'user',
+        content: `I'm ready for ${topic} in ${subject}, Grade ${grade}.`
+      });
+    }
 
-  try {
-    const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }]
-      })
+    // 4. API Call with Enhanced Parameters
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4', // Strongly recommended for complex flows
+      messages,
+      temperature: 0.3,
+      max_tokens: 1500,
+      top_p: 0.9,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.5
     });
-    const json = await apiRes.json();
-    const reply = json.choices?.[0]?.message?.content || "Sorry, I couldn't generate a reply.";
-    res.status(200).json({ message: reply });
+
+    // 5. Format Response
+    const reply = completion.choices[0].message.content;
+    
+    res.status(200).json({
+      reply: reply,
+      newHistory: [
+        ...messages,
+        { role: 'assistant', content: reply }
+      ]
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Error calling OpenAI' });
+    console.error('API Error:', err);
+    res.status(500).json({ 
+      message: 'Error: ' + (err.message || 'Failed to process request')
+    });
   }
 }
