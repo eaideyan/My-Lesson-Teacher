@@ -1,9 +1,3 @@
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -12,10 +6,10 @@ export default async function handler(req, res) {
   try {
     const { name, subject, grade, topic, message, history = [] } = req.body;
 
-    // 1. System Message with Full Teaching Logic
+    // 1. System Message with Persistent Instructions
     const systemMessage = {
       role: 'system',
-      content: `You are Mr. E, an AI teacher and world-class Nigerian educator with 25 years of experience in Primary 1 to Senior Secondary School 3 (SSS3) pedagogy, curriculum design, and youth counseling. You are a kind, attentive, expert private tutor for one student at a time. Your mission is to accelerate mastery 3x faster while building social-emotional resilience and cultural pride in every learner.
+      content: `You are Mr. E, an AI teacher and world-class Nigerian educator with 25+ years of experience in Primary 1 to Senior Secondary School 3 (SSS3) pedagogy, curriculum design, and youth counseling. You are a kind, attentive, expert private tutor for one student at a time. Your mission is to accelerate mastery 3x faster while building social-emotional resilience and cultural pride in every learner.
 You adapt your tone, pace, style, and content based on the student’s age, performance, preferred learning method, and cultural context—just like the best real-life teachers. (Do not explain your internal process to the student.) Use a friendly, one-on-one teaching style.
 
 -- SESSION START LOGIC --
@@ -130,17 +124,17 @@ Then, as Mr. E, immediately begin with Step 0 (check for previous learning histo
 `
     };
 
-    // 2. Build Message History with Context
+    // 2. Build Message History
     const messages = [systemMessage];
     
-    // Add previous conversation history
-    if (Array.isArray(history)) {
-      messages.push(...history.filter(m => m.role && m.content));
+    // Add previous conversation context
+    if (history.length > 0) {
+      messages.push(...history);
     }
 
-    // 3. Handle Initial vs Ongoing Conversations
+    // 3. Handle New Sessions vs Continuing Dialog
     if (message) {
-      // Follow-up message
+      // Continuing conversation
       messages.push({ role: 'user', content: message });
     } else {
       // New session initialization
@@ -150,22 +144,32 @@ Then, as Mr. E, immediately begin with Step 0 (check for previous learning histo
       });
     }
 
-    // 4. API Call with Enhanced Parameters
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4', // Strongly recommended for complex flows
-      messages,
-      temperature: 0.3,
-      max_tokens: 1500,
-      top_p: 0.9,
-      presence_penalty: 0.6,
-      frequency_penalty: 0.5
+    // 4. API Call with GPT-4
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: messages,
+        temperature: 0.3,
+        max_tokens: 1500
+      })
     });
 
-    // 5. Format Response
-    const reply = completion.choices[0].message.content;
+    const data = await response.json();
     
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Failed to get response');
+    }
+
+    const reply = data.choices[0].message.content;
+
+    // 5. Return Response with Updated History
     res.status(200).json({
-      reply: reply,
+      message: reply,
       newHistory: [
         ...messages,
         { role: 'assistant', content: reply }
@@ -173,9 +177,6 @@ Then, as Mr. E, immediately begin with Step 0 (check for previous learning histo
     });
 
   } catch (err) {
-    console.error('API Error:', err);
-    res.status(500).json({ 
-      message: 'Error: ' + (err.message || 'Failed to process request')
-    });
+    res.status(500).json({ message: `Error: ${err.message}` });
   }
 }
