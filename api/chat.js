@@ -4,6 +4,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Get form data
     const { name, subject, grade, topic, message, history = [] } = req.body;
 
     // 1. System Message with Persistent Instructions
@@ -49,59 +50,41 @@ export default async function handler(req, res) {
 `
     };
 
-    // 2. Build Message History
-    const messages = [systemMessage];
-    
-    // Add previous conversation context
-    if (history.length > 0) {
-      messages.push(...history);
-    }
+    // 2. Prepare Messages for Claude
+    const messages = [
+      { role: 'user', content: message || `Start ${topic} in ${subject}` },
+      ...history.slice(-4) // Keep last 4 messages
+    ];
 
-    // 3. Handle New Sessions vs Continuing Dialog
-    if (message) {
-      // Continuing conversation
-      messages.push({ role: 'user', content: message });
-    } else {
-      // New session initialization
-      messages.push({
-        role: 'user',
-        content: `I'm ready for ${topic} in ${subject}, Grade ${grade}.`
-      });
-    }
-
-    // 4. API Call with GPT-4
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // 3. Call Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        'X-API-Key': process.env.CLAUDE_KEY,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: messages,
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1000,
         temperature: 0.3,
-        max_tokens: 1500
+        system: systemPrompt,
+        messages
       })
     });
 
+    // 4. Get Response
     const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Failed to get response');
-    }
+    const reply = data.content[0].text;
 
-    const reply = data.choices[0].message.content;
-
-    // 5. Return Response with Updated History
     res.status(200).json({
-      message: reply,
-      newHistory: [
-        ...messages,
-        { role: 'assistant', content: reply }
-      ]
+      reply: reply,
+      newHistory: [...messages, { role: 'assistant', content: reply }]
     });
 
   } catch (err) {
-    res.status(500).json({ message: `Error: ${err.message}` });
+    res.status(500).json({ 
+      message: "Our classroom is busy now. Please try again later! 🏫⏳"
+    });
   }
 }
