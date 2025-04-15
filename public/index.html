@@ -102,7 +102,32 @@
       border-radius: 8px;
       font-size: 16px;
     }
+    
+.message-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  font-size: 0.9em;
+}
 
+.message-content {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 1em;
+}
+
+.message.bot {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  margin-right: 15%;
+}
+
+.message.user {
+  background-color: #e3f2fd;
+  border: 1px solid #bbdefb;
+  margin-left: 15%;
+  text-align: right;
+}
     @media screen and (max-width: 600px) {
       .container {
         padding: 20px;
@@ -142,72 +167,104 @@
   </div>
 
   <script>
-    const form = document.getElementById("tutorForm");
-    const chatContainer = document.getElementById("chat-container");
-    const chatInput = document.getElementById("chatbox-input");
-    const userInput = document.getElementById("userMessage");
+  let chatHistory = []; // Tracks FULL conversation context
 
-    let conversationHistory = [];
+  const form = document.getElementById("tutorForm");
+  const chatContainer = document.getElementById("chat-container");
+  const chatInput = document.getElementById("chatbox-input");
+  const userInput = document.getElementById("userMessage");
 
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = {
-        name: formData.get("name"),
-        subject: formData.get("subject"),
-        grade: formData.get("grade"),
-        topic: formData.get("topic")
-      };
-
-      // Append starter message
-      const intro = `I'm ready for ${data.topic} in ${data.subject}, Grade ${data.grade}.`;
-      addMessage("user", intro);
-      addMessage("bot", "Typing...");
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-      updateLastBotMessage(result.message);
-
-      chatInput.style.display = "flex";
-      form.style.display = "none";
+  // ================== FORM SUBMISSION ================== //
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const sessionData = {
+      name: formData.get("name"),
+      subject: formData.get("subject"),
+      grade: formData.get("grade"),
+      topic: formData.get("topic")
     };
 
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
+    // Hide form and show chat
+    form.style.display = "none";
+    chatInput.style.display = "flex";
 
-      addMessage("user", message);
-      addMessage("bot", "Typing...");
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
+    // Start conversation
+    const userIntro = `I'm ready for ${sessionData.topic} in ${sessionData.subject}, Grade ${sessionData.grade}.`;
+    addMessage("user", userIntro);
+    
+    try {
+      const typingId = addMessage("bot", "Mr. E is connecting...");
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...sessionData,
+          history: chatHistory // Send empty history initially
+        })
       });
 
-      const result = await response.json();
-      updateLastBotMessage(result.reply || result.message);
-      userInput.value = "";
+      const data = await response.json();
+      chatContainer.removeChild(typingId);
+      addMessage("bot", data.message);
+      chatHistory = data.newHistory; // Store updated history
+      
+    } catch (error) {
+      updateLastBotMessage("⚠️ Failed to start session. Please refresh.");
     }
+  };
 
-    function addMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-      msg.innerText = text;
-      chatContainer.appendChild(msg);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
+  // ================== MESSAGE SENDING ================== //
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
 
-    function updateLastBotMessage(newText) {
-      const botMessages = document.querySelectorAll(".message.bot");
-      const lastBot = botMessages[botMessages.length - 1];
-      if (lastBot) lastBot.innerText = newText;
+    userInput.value = ""; // Clear input immediately
+    addMessage("user", message);
+    
+    try {
+      const typingId = addMessage("bot", "Mr. E is thinking...");
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          history: chatHistory
+        })
+      });
+
+      const data = await response.json();
+      chatContainer.removeChild(typingId);
+      addMessage("bot", data.message);
+      chatHistory = data.newHistory; // Update conversation context
+      
+    } catch (error) {
+      updateLastBotMessage("⚠️ Connection error. Please try again.");
     }
-  </script>
+  }
+
+  // ================== MESSAGE UTILITIES ================== //
+  function addMessage(sender, text) {
+    const msg = document.createElement("div");
+    msg.className = `message ${sender}`;
+    msg.innerHTML = `
+      <div class="message-header">${sender === 'user' ? '👤 You' : '🤖 Mr. E'}</div>
+      <div class="message-content">${text}</div>
+    `;
+    chatContainer.appendChild(msg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return msg; // Return reference for typing indicator removal
+  }
+
+  function updateLastBotMessage(newText) {
+    const botMessages = document.querySelectorAll('.message.bot');
+    const lastBot = botMessages[botMessages.length - 1];
+    if (lastBot) {
+      lastBot.querySelector('.message-content').textContent = newText;
+    }
+  }
+</script>
 </body>
 </html>
