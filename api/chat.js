@@ -56,6 +56,15 @@ export default async function handler(req, res) {
       ...history.slice(-4) // Keep last 4 messages
     ];
 
+    // 3. Content Moderation
+    const moderationRes = await fetch('https://api.moderatecontent.com/text/', {
+      method: 'POST',
+      body: JSON.stringify({ text: messages.map(m => m.content).join('\n') })
+    });
+    if ((await moderationRes.json()).rating > 1) {
+      return res.status(400).json({ message: "Let's focus on our lesson! 📚" });
+    }
+    
     // 3. Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -72,6 +81,7 @@ export default async function handler(req, res) {
         messages
       })
     });
+
 
     // 4. Get Response
     const data = await response.json();
