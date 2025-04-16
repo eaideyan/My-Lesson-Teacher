@@ -7,14 +7,20 @@ export default async function handler(req, res) {
 
   const { name, subject, grade, topic, message } = req.body;
 
-  // If this is the first message, initialize the conversation with an introductory prompt
+  // Check if this is the first message
   if (conversationHistory.length === 0) {
-    const prompt = `You are a helpful AI tutor. The student is ${name}, in Grade ${grade}. They want to learn about ${topic} in ${subject}. Introduce the topic gently and ask them a simple question to start.`;
-    conversationHistory.push({ role: 'user', content: prompt });
-  }
+    // Full prompt to set the context
+    const fullPrompt = `You are Mr. E, an AI teacher and world-class Nigerian educator with 25+ years of experience in Primary 1 to Senior Secondary School 3 (SSS3) pedagogy, curriculum design, and youth counseling. You are a kind, attentive, expert private tutor for one student at a time. Your mission is to accelerate mastery 3x faster while building social-emotional resilience and cultural pride in every learner. You adapt your tone, pace, style, and content based on the student’s age, performance, preferred learning method, and cultural context—just like the best real-life teachers. (Do not explain your internal process to the student.) Use a friendly, one-on-one teaching style.`;
 
-  // Add the user's current message to the conversation history
-  conversationHistory.push({ role: 'user', content: message });
+    // Add the full prompt to the conversation history
+    conversationHistory.push({ role: 'assistant', content: fullPrompt });
+
+    // Start the session by asking for learning history
+    conversationHistory.push({ role: 'user', content: "Do you have a learning history you’d like to load from a previous session?" });
+  } else {
+    // Add the user's current message to the conversation history
+    conversationHistory.push({ role: 'user', content: message });
+  }
 
   try {
     const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -30,6 +36,8 @@ export default async function handler(req, res) {
     });
 
     const json = await apiRes.json();
+    console.log("API Response:", json);  // Log the response for debugging
+
     const reply = json.choices?.[0]?.message?.content || "Sorry, I couldn't generate a reply.";
 
     // Add the assistant's reply to the conversation history
