@@ -291,7 +291,40 @@
       isProcessing = false;
     }
   }
+// In your existing <script>:
+async function apiCall(endpoint, data) {
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
 
+    const responseData = await response.json();
+    
+    if (!response.ok || responseData.error) {
+      throw new Error(responseData.error || 'Unknown error');
+    }
+
+    return responseData;
+
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+}
+
+function handleResponse(data) {
+  if (!data?.reply) {
+    throw new Error('Invalid server response');
+  }
+  
+  // Clear any existing errors
+  document.querySelectorAll('.error').forEach(e => e.remove());
+  
+  addMessage("bot", data.reply);
+  chatHistory = data.newHistory || [];
+}
   // Add message to chat
   function addMessage(sender, text) {
     const msg = document.createElement("div");
