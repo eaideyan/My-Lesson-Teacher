@@ -142,72 +142,73 @@
   </div>
 
   <script>
-    const form = document.getElementById("tutorForm");
-    const chatContainer = document.getElementById("chat-container");
-    const chatInput = document.getElementById("chatbox-input");
-    const userInput = document.getElementById("userMessage");
+  const form = document.getElementById("tutorForm");
+  const chatContainer = document.getElementById("chat-container");
+  const chatInput = document.getElementById("chatbox-input");
+  const userInput = document.getElementById("userMessage");
 
-    let conversationHistory = [];
+  let conversationHistory = [];  // Initialize conversation history
 
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = {
-        name: formData.get("name"),
-        subject: formData.get("subject"),
-        grade: formData.get("grade"),
-        topic: formData.get("topic")
-      };
-
-      // Append starter message
-      const intro = `I'm ready for ${data.topic} in ${data.subject}, Grade ${data.grade}.`;
-      addMessage("user", intro);
-      addMessage("bot", "Typing...");
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-      updateLastBotMessage(result.message);
-
-      chatInput.style.display = "flex";
-      form.style.display = "none";
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const data = {
+      name: formData.get("name"),
+      subject: formData.get("subject"),
+      grade: formData.get("grade"),
+      topic: formData.get("topic")
     };
 
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
+    // Append starter message
+    const intro = `I'm ready for ${data.topic} in ${data.subject}, Grade ${data.grade}.`;
+    addMessage("user", intro);
+    addMessage("bot", "Typing...");
 
-      addMessage("user", message);
-      addMessage("bot", "Typing...");
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
 
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-      });
+    const result = await response.json();
+    updateLastBotMessage(result.message);
 
-      const result = await response.json();
-      updateLastBotMessage(result.reply || result.message);
-      userInput.value = "";
-    }
+    chatInput.style.display = "flex";
+    form.style.display = "none";
+  };
 
-    function addMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-      msg.innerText = text;
-      chatContainer.appendChild(msg);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
 
-    function updateLastBotMessage(newText) {
-      const botMessages = document.querySelectorAll(".message.bot");
-      const lastBot = botMessages[botMessages.length - 1];
-      if (lastBot) lastBot.innerText = newText;
-    }
-  </script>
+    addMessage("user", message);
+    addMessage("bot", "Typing...");
+
+    // Include the conversation history in the request
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, conversationHistory })  // Include conversation history
+    });
+
+    const result = await response.json();
+    updateLastBotMessage(result.message || "Sorry, I couldn't generate a reply.");
+    userInput.value = "";
+  }
+
+  function addMessage(sender, text) {
+    const msg = document.createElement("div");
+    msg.className = `message ${sender}`;
+    msg.innerText = text;
+    chatContainer.appendChild(msg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  function updateLastBotMessage(newText) {
+    const botMessages = document.querySelectorAll(".message.bot");
+    const lastBot = botMessages[botMessages.length - 1];
+    if (lastBot) lastBot.innerText = newText;
+  }
+</script>
 </body>
 </html>
