@@ -1,102 +1,66 @@
+// api/chat.js
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+  // Allow browser connections
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle OPTIONS requests first
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (!process.env.GEMINI_API_KEY) {
-    console.error("Missing Gemini API key in environment variables.");
-    return res.status(500).json({ message: "Server misconfiguration. Please try again later." });
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Use POST method' });
   }
+
+  // Get user input
+  const { message, sessionId } = req.body;
 
   try {
-    const { name, subject, grade, topic, message, history = [] } = req.body;
-
-    if (!subject || !grade || (!topic && !message)) {
-      return res.status(400).json({ message: "Missing required information to start the lesson." });
+    // 1. Validate input
+    if (!message) {
+      return res.status(400).json({ error: 'Type a message first' });
     }
 
-    const systemPrompt = `You are Mr. E|Nigerian expert teacher|25+ years experience|Specialty:3x accelerated mastery
+    // 2. Create simple session ID if new user
+    const currentSessionId = sessionId || Math.random().toString(36).slice(2);
 
-# CORE WORKFLOW
-1. INITIAL ASSESSMENT
-   - Check for [learning_summary]
-   - If new: "Your name?" → "Hi [Name], begin [Topic] in [Subject] (Grade [X])"
-
-2. KNOWLEDGE TREE
-   a) Generate 3-5 nodes for [Topic]:
-      🌱 Foundation | 🔁 Prerequisite | 🌟 Capstone
-   b) Display as visual tree with progress tracking
-   c) Offer sub-node focus choice
-
-3. NODE MASTERY FLOW (per node):
-   A) Diagnostic (5 Qs):
-   1. Recall 2. Concept 3. Application 4. Visual 5. Challenge
-   → Immediate feedback + ZPD adjustment
-
-   B) Teaching Protocol:
-   - 1st fail: Alternate explanation + Nigerian analogy
-   - 2nd fail: Scaffolded example
-   - 3rd fail: Guided discovery
-
-   C) Mastery Check (3 Qs):
-   - Application-focused → Growth mindset feedback
-
-4. SESSION RULES
-   - Track nodes: ✔️ (≥85%) | 🔁 (<85%)
-   - End with [learning_summary]
-   - Cultural context: Naira, local examples
-   - Age-adjusted tone (emojis K1-K3 → formal SS3)
-
-# CRITICAL BEHAVIORS
-⇒ 1 question → 1 answer → feedback cycle
-⇒ Never solve directly - Socratic guidance only
-⇒ Nigerian curriculum alignment
-⇒ Bloom's progression: Remember → Create
-`;
-
-    const conversationHistory = [
-      {
-        role: "user",
-        parts: [{ text: systemPrompt + "\n\n" + (message || `Start ${topic} in ${subject}`) }]
-      }
-    ];
-
-    // Add limited message history if available (optional)
-    history.slice(-4).forEach(msg => {
-      conversationHistory.push({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      });
-    });
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: conversationHistory })
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Gemini API error:", error);
-      return res.status(500).json({ message: "Gemini API failed. Check your key or quota." });
-    }
-
-    const data = await response.json();
-    const assistantReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm ready when you are!";
-
-    return res.status(200).json({
-      reply: assistantReply,
-      newHistory: [
-        ...history,
-        { role: 'user', content: message || `Start ${topic} in ${subject}` },
-        { role: 'assistant', content: assistantReply }
+    // 3. Create Gemini prompt (SIMPLIFIED VERSION)
+    const geminiPayload = {
+      contents: [
+        {
+          role: "user",
+          parts: [{
+            text: `You are Mr. E, a Nigerian teacher. Answer this: ${message}`
+          }]
+        }
       ]
+    };
+
+    // 4. Call Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiPayload)
+      }
+    );
+
+    // 5. Handle response
+    const data = await response.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm still learning!";
+
+    // 6. Send back response
+    return res.status(200).json({
+      reply,
+      sessionId: currentSessionId
     });
 
-  } catch (err) {
-    console.error('Unexpected server error:', err);
-    return res.status(500).json({
-      message: "Our classroom is busy. Please try again in 30 seconds! ⏳"
-    });
+  } catch (error) {
+    console.error('Simple Error:', error);
+    return res.status(500).json({ error: 'Mr. E is resting. Try again later!' });
   }
 }
