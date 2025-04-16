@@ -1,24 +1,20 @@
 export default async function handler(req, res) {
-  // 1. Allow only POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  // 2. Check for missing Claude API key (during development or misconfig)
-  if (!process.env.CLAUDE_KEY) {
-    console.error("Missing Claude API key in environment variables.");
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("Missing Gemini API key in environment variables.");
     return res.status(500).json({ message: "Server misconfiguration. Please try again later." });
   }
 
   try {
-    // 3. Extract and validate input
     const { name, subject, grade, topic, message, history = [] } = req.body;
 
     if (!subject || !grade || (!topic && !message)) {
       return res.status(400).json({ message: "Missing required information to start the lesson." });
     }
 
-    // 4. Construct system prompt
     const systemPrompt = `You are Mr. E|Nigerian expert teacher|25+ years experience|Specialty:3x accelerated mastery
 
 # CORE WORKFLOW
@@ -58,63 +54,43 @@ export default async function handler(req, res) {
 ⇒ Bloom's progression: Remember → Create
 `;
 
-    // 5. Prepare messages for Claude
-    const messages = [
-      ...history.slice(-4), // Only last 4 messages
+    const conversationHistory = [
       {
-        role: 'user',
-        content: message || `Start ${topic} in ${subject}`
+        role: "user",
+        parts: [{ text: systemPrompt + "\n\n" + (message || `Start ${topic} in ${subject}`) }]
       }
     ];
 
-    // 6. Content moderation (optional - disable if not using real API key)
-    try {
-      const moderationRes = await fetch('https://api.moderatecontent.com/text/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: messages.map(m => m.content).join('\n') })
+    // Add limited message history if available (optional)
+    history.slice(-4).forEach(msg => {
+      conversationHistory.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
       });
-
-      const moderationData = await moderationRes.json();
-      if (moderationData.rating > 1) {
-        return res.status(400).json({ message: "Let's focus on our lesson! 📚" });
-      }
-    } catch (modErr) {
-      console.warn('Moderation check failed. Continuing anyway...', modErr);
-      // Proceed even if moderation fails
-    }
-
-    // 7. Call Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': process.env.CLAUDE_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1000,
-        temperature: 0.3,
-        system: systemPrompt,
-        messages
-      })
     });
 
-    // 8. Check Claude response
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: conversationHistory })
+    });
+
     if (!response.ok) {
-      const errText = await response.text();
-      console.error("Claude API error:", response.status, errText);
-      return res.status(500).json({ message: "Claude API failed. Please check your API key or request." });
+      const error = await response.text();
+      console.error("Gemini API error:", error);
+      return res.status(500).json({ message: "Gemini API failed. Check your key or quota." });
     }
 
     const data = await response.json();
+    const assistantReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm ready when you are!";
 
-    // 9. Send success response
-    const assistantReply = data.content?.[0]?.text || "I'm ready when you are!";
     return res.status(200).json({
       reply: assistantReply,
-      newHistory: [...messages, { role: 'assistant', content: assistantReply }]
+      newHistory: [
+        ...history,
+        { role: 'user', content: message || `Start ${topic} in ${subject}` },
+        { role: 'assistant', content: assistantReply }
+      ]
     });
 
   } catch (err) {
