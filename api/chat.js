@@ -4,13 +4,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get form data
+    // 1. Get form data
     const { name, subject, grade, topic, message, history = [] } = req.body;
 
-    // 1. System Message with Persistent Instructions
-    const systemMessage = {
-      role: 'system',
-      content: `You are Mr. E|Nigerian expert teacher|25+ years experience|Specialty:3x accelerated mastery
+    // 2. Create system instructions
+    const systemPrompt = `You are Mr. E|Nigerian expert teacher|25+ years experience|Specialty:3x accelerated mastery
 
 # CORE WORKFLOW
 1. INITIAL ASSESSMENT
@@ -47,16 +45,15 @@ export default async function handler(req, res) {
 ⇒ Never solve directly - Socratic guidance only
 ⇒ Nigerian curriculum alignment
 ⇒ Bloom's progression: Remember → Create
-`
-    };
+`;
 
-    // 2. Prepare Messages for Claude
+    // 3. Prepare messages
     const messages = [
-      { role: 'user', content: message || `Start ${topic} in ${subject}` },
-      ...history.slice(-4) // Keep last 4 messages
+      ...history.slice(-4), // Last 4 messages
+      { role: 'user', content: message || `Start ${topic} in ${subject}` }
     ];
 
-    // 3. Content Moderation
+    // 4. Content safety check
     const moderationRes = await fetch('https://api.moderatecontent.com/text/', {
       method: 'POST',
       body: JSON.stringify({ text: messages.map(m => m.content).join('\n') })
@@ -64,8 +61,8 @@ export default async function handler(req, res) {
     if ((await moderationRes.json()).rating > 1) {
       return res.status(400).json({ message: "Let's focus on our lesson! 📚" });
     }
-    
-    // 3. Call Claude API
+
+    // 5. Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -82,19 +79,17 @@ export default async function handler(req, res) {
       })
     });
 
-
-    // 4. Get Response
+    // 6. Send response
     const data = await response.json();
-    const reply = data.content[0].text;
-
     res.status(200).json({
-      reply: reply,
-      newHistory: [...messages, { role: 'assistant', content: reply }]
+      reply: data.content[0].text,
+      newHistory: [...messages, { role: 'assistant', content: data.content[0].text }]
     });
 
   } catch (err) {
+    console.error('Error:', err);
     res.status(500).json({ 
-      message: "Our classroom is busy now. Please try again later! 🏫⏳"
+      message: "Our classroom is busy. Please try again in 30 seconds! ⏳"
     });
   }
 }
