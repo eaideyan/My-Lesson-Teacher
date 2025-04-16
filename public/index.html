@@ -211,3 +211,177 @@
   </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tutor - Mr. E</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #chat-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            height: 60vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background: #e3f2fd;
+            margin-left: 20%;
+        }
+        .ai-message {
+            background: #f5f5f5;
+            margin-right: 20%;
+        }
+        #input-container {
+            display: flex;
+            gap: 10px;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0070f3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0051a2;
+        }
+        .progress-bar {
+            height: 5px;
+            background: #eee;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        .progress {
+            height: 100%;
+            background: #0070f3;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mr. E - Your AI Tutor</h1>
+    <div id="chat-container"></div>
+    <div class="progress-bar"><div class="progress"></div></div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        // State management
+        let messages = [];
+        let learningSummary = localStorage.getItem('learningSummary') || null;
+
+        // Initialize session
+        function initializeSession() {
+            const chatContainer = document.getElementById('chat-container');
+            
+            // Show existing messages
+            messages.forEach(msg => appendMessage(msg.role, msg.content));
+
+            // If new session, start with welcome message
+            if (messages.length === 0) {
+                appendMessage('assistant', 'Welcome to your AI Tutor! What would you like to learn today?');
+            }
+        }
+
+        // Add message to UI and history
+        function appendMessage(role, content) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Send message to backend
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const progressBar = document.querySelector('.progress');
+            const button = document.querySelector('button');
+            
+            try {
+                // Disable UI during processing
+                button.disabled = true;
+                userInput.disabled = true;
+                progressBar.style.width = '100%';
+
+                // Add user message
+                const userMessage = userInput.value.trim();
+                messages.push({ role: 'user', content: userMessage });
+                appendMessage('user', userMessage);
+
+                // Clear input
+                userInput.value = '';
+
+                // Call API
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: messages.filter(msg => msg.role !== 'system'),
+                        learningSummary
+                    })
+                });
+
+                if (!response.ok) throw new Error('API Error');
+                
+                const data = await response.json();
+                
+                // Update state
+                messages.push({ role: 'assistant', content: data.message });
+                if (data.learningSummary) {
+                    learningSummary = data.learningSummary;
+                    localStorage.setItem('learningSummary', learningSummary);
+                }
+
+                // Show AI response
+                appendMessage('assistant', data.message);
+
+            } catch (error) {
+                appendMessage('assistant', `Error: ${error.message}`);
+                console.error(error);
+            } finally {
+                // Re-enable UI
+                button.disabled = false;
+                userInput.disabled = false;
+                progressBar.style.width = '0';
+                userInput.focus();
+            }
+        }
+
+        // Enter key support
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Start session
+        initializeSession();
+    </script>
+</body>
+</html>
