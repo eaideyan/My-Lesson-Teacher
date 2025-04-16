@@ -167,20 +167,16 @@
     <h2>Welcome to Your AI Tutor</h2>
     <form id="tutorForm">
       <label>
-        Name:
-        <input type="text" name="name" required />
+        Name: <input type="text" name="name" required>
       </label>
       <label>
-        Subject:
-        <input type="text" name="subject" required />
+        Subject: <input type="text" name="subject" required>
       </label>
       <label>
-        Grade:
-        <input type="text" name="grade" required />
+        Grade: <input type="text" name="grade" required>
       </label>
       <label>
-        Topic:
-        <input type="text" name="topic" required />
+        Topic: <input type="text" name="topic" required>
       </label>
       <button type="submit">Start Chat</button>
     </form>
@@ -188,117 +184,129 @@
     <div id="chat-container"></div>
 
     <div id="chatbox-input" style="display: none;">
-      <input type="text" id="userMessage" placeholder="Type your message..." />
+      <input type="text" id="userMessage" placeholder="Type your message...">
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
-  let chatHistory = []; // Tracks FULL conversation context
+    let chatHistory = [];
+    let isProcessing = false;
 
-  const form = document.getElementById("tutorForm");
-  const chatContainer = document.getElementById("chat-container");
-  const chatInput = document.getElementById("chatbox-input");
-  const userInput = document.getElementById("userMessage");
-
-  // ================== FORM SUBMISSION ================== //
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    const sessionData = {
-      name: formData.get("name"),
-      subject: formData.get("subject"),
-      grade: formData.get("grade"),
-      topic: formData.get("topic")
+    const elements = {
+      form: document.getElementById("tutorForm"),
+      chatContainer: document.getElementById("chat-container"),
+      chatInput: document.getElementById("chatbox-input"),
+      userInput: document.getElementById("userMessage")
     };
 
-    // Hide form and show chat
-    form.style.display = "none";
-    chatInput.style.display = "flex";
+    // Handle form submission
+    elements.form.onsubmit = async (e) => {
+      e.preventDefault();
+      if (isProcessing) return;
 
-    // Start conversation
-    const userIntro = `I'm ready for ${sessionData.topic} in ${sessionData.subject}, Grade ${sessionData.grade}.`;
-    addMessage("user", userIntro);
-    
-    try {
-      const typingId = addMessage("bot", "Mr. E is connecting...");
-      
-      const response = await fetch('/api/chat', {
+      isProcessing = true;
+      const formData = new FormData(elements.form);
+      const sessionData = {
+        name: formData.get("name"),
+        subject: formData.get("subject"),
+        grade: formData.get("grade"),
+        topic: formData.get("topic")
+      };
+
+      // UI Changes
+      elements.form.style.display = "none";
+      elements.chatInput.style.display = "flex";
+      addMessage("user", `I'm ready for ${sessionData.topic} in ${sessionData.subject}, Grade ${sessionData.grade}.`);
+
+      try {
+        const typingId = addMessage("bot", "Mr. E is connecting...");
+        const response = await apiCall('/api/chat', sessionData);
+        elements.chatContainer.removeChild(typingId);
+        handleResponse(response);
+      } catch (error) {
+        showError("Failed to start session. Please refresh.");
+      } finally {
+        isProcessing = false;
+      }
+    };
+
+    // Handle message sending
+    async function sendMessage() {
+      if (isProcessing || !elements.userInput.value.trim()) return;
+      isProcessing = true;
+
+      const message = elements.userInput.value.trim();
+      elements.userInput.value = "";
+      addMessage("user", message);
+
+      try {
+        const typingId = addMessage("bot", "Mr. E is thinking...");
+        const response = await apiCall('/api/chat', { message });
+        elements.chatContainer.removeChild(typingId);
+        handleResponse(response);
+      } catch (error) {
+        showError("Connection error. Please try again.");
+      } finally {
+        isProcessing = false;
+      }
+    }
+
+    // API Handler
+    async function apiCall(endpoint, data) {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...sessionData,
-          history: chatHistory // Send empty history initially
-        })
+        body: JSON.stringify({ ...data, history: chatHistory })
       });
 
-      const data = await response.json();
-      chatContainer.removeChild(typingId);
-      addMessage("bot", data.message);
-      chatHistory = data.newHistory; // Store updated history
-      
-    } catch (error) {
-      updateLastBotMessage("⚠️ Failed to start session. Please refresh.");
+      if (!response.ok) throw new Error('API Error');
+      return response.json();
     }
-  };
 
-  // ================== MESSAGE SENDING ================== //
-  async function sendMessage() {
-    const message = userInput.value.trim();
-    if (!message) return;
-
-    userInput.value = ""; // Clear input immediately
-    addMessage("user", message);
-    
-    try {
-      const typingId = addMessage("bot", "Mr. E is thinking...");
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: message,
-          history: chatHistory
-        })
-      });
-
-      const data = await response.json();
-      chatContainer.removeChild(typingId);
-      addMessage("bot", data.message);
-      chatHistory = data.newHistory; // Update conversation context
-      
-    } catch (error) {
-      updateLastBotMessage("⚠️ Connection error. Please try again.");
+    // Handle API responses
+    function handleResponse(data) {
+      if (data.error) {
+        showError(data.error);
+        return;
+      }
+      addMessage("bot", data.reply);
+      chatHistory = data.newHistory;
     }
-  }
 
-  // ================== MESSAGE UTILITIES ================== //
-  function addMessage(sender, text) {
-  const msg = document.createElement("div");
-  const grade = document.querySelector('input[name="grade"]').value;
-  
-  // Add appropriate classes
-  msg.className = `message ${sender} ${
-    grade.toLowerCase().includes('ss') ? 'grade-older' : 'grade-young'
-  }`;
-  
-  // Add special formatting
-  msg.innerHTML = text
-    .replace(/Question:/g, '<span style="color:#e74c3c">Question:</span>')
-    .replace(/Answer:/g, '<span style="color:#2ecc71">Answer:</span>')
-    .replace(/💡/g, '💡 Explanation:');
+    // Message formatting
+    function addMessage(sender, text) {
+      const msg = document.createElement("div");
+      const grade = document.querySelector('input[name="grade"]').value.toLowerCase();
+      
+      msg.className = `message ${sender} ${grade.includes('ss') ? 'grade-older' : 'grade-young'}`;
+      msg.innerHTML = `
+        <div class="message-header">${sender === 'user' ? '👤 You' : '🤖 Mr. E'}</div>
+        <div class="message-content">
+          ${formatMessageContent(text)}
+        </div>
+      `;
 
-  chatContainer.appendChild(msg);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-  function updateLastBotMessage(newText) {
-    const botMessages = document.querySelectorAll('.message.bot');
-    const lastBot = botMessages[botMessages.length - 1];
-    if (lastBot) {
-      lastBot.querySelector('.message-content').textContent = newText;
+      elements.chatContainer.appendChild(msg);
+      elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
+      return msg;
     }
-  }
-</script>
+
+    // Format question/answer markers
+    function formatMessageContent(text) {
+      return text
+        .replace(/Question:/g, '<span class="question">Question:</span>')
+        .replace(/Answer:/g, '<span class="answer">Answer:</span>')
+        .replace(/💡 Explanation:/g, '💡 <em>Explanation:</em>');
+    }
+
+    // Error handling
+    function showError(message) {
+      const errorMsg = document.createElement("div");
+      errorMsg.className = "message error";
+      errorMsg.textContent = `⚠️ ${message}`;
+      elements.chatContainer.appendChild(errorMsg);
+    }
+  </script>
 </body>
 </html>
