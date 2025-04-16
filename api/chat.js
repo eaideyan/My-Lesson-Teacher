@@ -63,21 +63,30 @@ export default async function handler(req, res) {
     }
 
     // 5. Call Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': process.env.CLAUDE_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 1000,
-        temperature: 0.3,
-        system: systemPrompt,
-        messages
-      })
-    });
+   const response = await fetch('https://api.anthropic.com/v1/messages', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': process.env.CLAUDE_KEY,
+    'anthropic-version': '2023-06-01'
+  },
+  body: JSON.stringify({
+    model: 'claude-3-haiku-20240307',
+    max_tokens: 1000,
+    temperature: 0.3,
+    system: systemPrompt,
+    messages
+  })
+});
+
+// 🔒 Check response status BEFORE parsing
+if (!response.ok) {
+  const errText = await response.text(); // Show what Claude API actually returned
+  console.error("Claude API error:", response.status, errText);
+  return res.status(500).json({ message: "Claude API failed. Please check your API key or request." });
+}
+
+const data = await response.json();
 
     // 6. Send response
     const data = await response.json();
