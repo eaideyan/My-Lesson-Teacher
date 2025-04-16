@@ -1,34 +1,12 @@
-let conversationHistory = [];  // Store conversation history
-const MAX_HISTORY_LENGTH = 5;  // Max number of messages to retain in the history
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { name, subject, grade, topic, message } = req.body;
-
-  // If this is the first request, initialize conversation history with an introductory message
-  if (conversationHistory.length === 0) {
-    const introMessage = `You are a helpful AI tutor. The student is ${name}, in Grade ${grade}. They want to learn about ${topic} in ${subject}. Introduce the topic gently and ask them a simple question to start.`;
-    conversationHistory.push({ role: 'user', content: introMessage });
-  }
-
-  // Add the user's current message to the conversation history
-  conversationHistory.push({ role: 'user', content: message });
-
-  // Truncate the conversation history to keep the most recent messages (MAX_HISTORY_LENGTH)
-  if (conversationHistory.length > MAX_HISTORY_LENGTH) {
-    conversationHistory = conversationHistory.slice(-MAX_HISTORY_LENGTH);
-  }
+  const { name, subject, grade, topic } = req.body;
+  const prompt = `You are a helpful AI tutor. The student is ${name}, in Grade ${grade}. They want to learn about ${topic} in ${subject}. Introduce the topic gently and ask them a simple question to start.`;
 
   try {
-    // Log the conversation history being sent to the API
-    console.log("Sending to OpenAI:", JSON.stringify({
-      model: 'gpt-4',
-      messages: conversationHistory,
-    }, null, 2));
-
     const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,27 +15,15 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'gpt-4',  // Ensure GPT-4 is correctly specified
-        messages: conversationHistory,  // Send the truncated conversation history
+        messages: [{ role: 'user', content: prompt }]  // The user's message is being sent here
       })
     });
 
     const json = await apiRes.json();
-    console.log("API Response:", json);  // Log the response for debugging
+    const reply = json.choices?.[0]?.message?.content || "Sorry, I couldn't generate a reply.";
 
-    // Check if the API response contains the necessary data
-    if (!json || !json.choices || !json.choices[0] || !json.choices[0].message) {
-      return res.status(500).json({ message: 'Error: No valid response from GPT-4' });
-    }
-
-    const reply = json.choices[0].message.content || "Sorry, I couldn't generate a reply.";
-
-    // Add the assistant's reply to the conversation history
-    conversationHistory.push({ role: 'assistant', content: reply });
-
-    // Return the assistant's reply
-    res.status(200).json({ message: reply });
+    res.status(200).json({ message: reply });  // Send the response back to the front-end
   } catch (err) {
-    console.error(err);  // Log any errors
     res.status(500).json({ message: 'Error calling OpenAI' });
   }
 }
