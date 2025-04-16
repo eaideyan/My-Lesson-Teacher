@@ -23,7 +23,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Send the entire conversation history to GPT-4
+    // Log the conversation history being sent to the API
+    console.log("Sending to OpenAI:", JSON.stringify({
+      model: 'gpt-4',
+      messages: conversationHistory,
+    }, null, 2));
+
     const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
