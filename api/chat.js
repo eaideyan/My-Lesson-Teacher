@@ -1,5 +1,6 @@
-let conversationHistory = [];  // Store conversation history
+// chat.js
 
+let conversationHistory = [];  // Store conversation history
 const MAX_HISTORY_LENGTH = 5;  // Max number of messages to retain in the history
 
 export default async function handler(req, res) {
@@ -20,6 +21,7 @@ export default async function handler(req, res) {
 
   // Truncate the conversation history to keep the most recent messages (MAX_HISTORY_LENGTH)
   if (conversationHistory.length > MAX_HISTORY_LENGTH) {
+    // Optionally, you can summarize older messages here if needed
     conversationHistory = conversationHistory.slice(-MAX_HISTORY_LENGTH);
   }
 
