@@ -154,7 +154,26 @@
   background: white;
   border: 1px solid #dee2e6;
 }
-    
+ .typing .dots {
+  display: inline-block;
+  animation: typing 1.5s infinite;
+}
+
+@keyframes typing {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+.error button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin-top: 10px;
+  cursor: pointer;
+}   
     @media screen and (max-width: 600px) {
       .container {
         padding: 20px;
@@ -190,123 +209,135 @@
   </div>
 
   <script>
-    let chatHistory = [];
-    let isProcessing = false;
+  let chatHistory = [];
+  let isProcessing = false;
 
-    const elements = {
-      form: document.getElementById("tutorForm"),
-      chatContainer: document.getElementById("chat-container"),
-      chatInput: document.getElementById("chatbox-input"),
-      userInput: document.getElementById("userMessage")
+  // Get DOM elements
+  const form = document.getElementById("tutorForm");
+  const chatContainer = document.getElementById("chat-container");
+  const userInput = document.getElementById("userMessage");
+  const chatUI = document.getElementById("chatbox-input");
+
+  // Form submission handler
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    if (isProcessing) return;
+    
+    isProcessing = true;
+    const formData = new FormData(form);
+    const sessionData = {
+      name: formData.get("name"),
+      subject: formData.get("subject"),
+      grade: formData.get("grade"),
+      topic: formData.get("topic")
     };
 
-    // Handle form submission
-    elements.form.onsubmit = async (e) => {
-      e.preventDefault();
-      if (isProcessing) return;
-
-      isProcessing = true;
-      const formData = new FormData(elements.form);
-      const sessionData = {
-        name: formData.get("name"),
-        subject: formData.get("subject"),
-        grade: formData.get("grade"),
-        topic: formData.get("topic")
-      };
-
-      // UI Changes
-      elements.form.style.display = "none";
-      elements.chatInput.style.display = "flex";
-      addMessage("user", `I'm ready for ${sessionData.topic} in ${sessionData.subject}, Grade ${sessionData.grade}.`);
-
-      try {
-        const typingId = addMessage("bot", "Mr. E is connecting...");
-        const response = await apiCall('/api/chat', sessionData);
-        elements.chatContainer.removeChild(typingId);
-        handleResponse(response);
-      } catch (error) {
-        showError("Failed to start session. Please refresh.");
-      } finally {
-        isProcessing = false;
-      }
-    };
-
-    // Handle message sending
-    async function sendMessage() {
-      if (isProcessing || !elements.userInput.value.trim()) return;
-      isProcessing = true;
-
-      const message = elements.userInput.value.trim();
-      elements.userInput.value = "";
-      addMessage("user", message);
-
-      try {
-        const typingId = addMessage("bot", "Mr. E is thinking...");
-        const response = await apiCall('/api/chat', { message });
-        elements.chatContainer.removeChild(typingId);
-        handleResponse(response);
-      } catch (error) {
-        showError("Connection error. Please try again.");
-      } finally {
-        isProcessing = false;
-      }
-    }
-
-    // API Handler
-    async function apiCall(endpoint, data) {
-      const response = await fetch(endpoint, {
+    // Update UI
+    form.style.display = "none";
+    chatUI.style.display = "flex";
+    
+    try {
+      addMessage("user", `Starting ${sessionData.topic} in ${sessionData.subject} (Grade ${sessionData.grade})`);
+      const typing = addTypingIndicator();
+      
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, history: chatHistory })
+        body: JSON.stringify(sessionData)
       });
 
-      if (!response.ok) throw new Error('API Error');
-      return response.json();
-    }
-
-    // Handle API responses
-    function handleResponse(data) {
-      if (data.error) {
-        showError(data.error);
-        return;
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const data = await response.json();
+      chatContainer.removeChild(typing);
       addMessage("bot", data.reply);
       chatHistory = data.newHistory;
-    }
 
-    // Message formatting
-    function addMessage(sender, text) {
-      const msg = document.createElement("div");
-      const grade = document.querySelector('input[name="grade"]').value.toLowerCase();
+    } catch (error) {
+      showError(`Connection failed: ${error.message}`);
+    } finally {
+      isProcessing = false;
+    }
+  };
+
+  // Message sending handler
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message || isProcessing) return;
+    
+    isProcessing = true;
+    userInput.value = "";
+    addMessage("user", message);
+
+    try {
+      const typing = addTypingIndicator();
       
-      msg.className = `message ${sender} ${grade.includes('ss') ? 'grade-older' : 'grade-young'}`;
-      msg.innerHTML = `
-        <div class="message-header">${sender === 'user' ? '👤 You' : '🤖 Mr. E'}</div>
-        <div class="message-content">
-          ${formatMessageContent(text)}
-        </div>
-      `;
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, history: chatHistory })
+      });
 
-      elements.chatContainer.appendChild(msg);
-      elements.chatContainer.scrollTop = elements.chatContainer.scrollHeight;
-      return msg;
-    }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const data = await response.json();
+      chatContainer.removeChild(typing);
+      addMessage("bot", data.reply);
+      chatHistory = data.newHistory;
 
-    // Format question/answer markers
-    function formatMessageContent(text) {
-      return text
-        .replace(/Question:/g, '<span class="question">Question:</span>')
-        .replace(/Answer:/g, '<span class="answer">Answer:</span>')
-        .replace(/💡 Explanation:/g, '💡 <em>Explanation:</em>');
+    } catch (error) {
+      showError(`Message failed: ${error.message}`);
+    } finally {
+      isProcessing = false;
     }
+  }
 
-    // Error handling
-    function showError(message) {
-      const errorMsg = document.createElement("div");
-      errorMsg.className = "message error";
-      errorMsg.textContent = `⚠️ ${message}`;
-      elements.chatContainer.appendChild(errorMsg);
-    }
-  </script>
+  // Add message to chat
+  function addMessage(sender, text) {
+    const msg = document.createElement("div");
+    const grade = document.querySelector('input[name="grade"]').value.toLowerCase();
+    
+    msg.className = `message ${sender} ${grade.includes('ss') ? 'grade-older' : 'grade-young'}`;
+    msg.innerHTML = `
+      <div class="message-header">${sender === 'user' ? '👤 You' : '🤖 Mr. E'}</div>
+      <div class="message-content">${formatContent(text)}</div>
+    `;
+    
+    chatContainer.appendChild(msg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return msg;
+  }
+
+  // Add typing indicator
+  function addTypingIndicator() {
+    const typing = document.createElement("div");
+    typing.className = "message bot typing";
+    typing.innerHTML = `
+      <div class="message-header">🤖 Mr. E</div>
+      <div class="message-content">Typing<span class="dots">...</span></div>
+    `;
+    chatContainer.appendChild(typing);
+    return typing;
+  }
+
+  // Format message content
+  function formatContent(text) {
+    return text
+      .replace(/Question:/g, '<span class="question">Question:</span>')
+      .replace(/Answer:/g, '<span class="answer">Answer:</span>')
+      .replace(/💡/g, '💡 Explanation:');
+  }
+
+  // Show error message
+  function showError(message) {
+    const errorMsg = document.createElement("div");
+    errorMsg.className = "message error";
+    errorMsg.innerHTML = `
+      ⚠️ ${message}
+      <button onclick="window.location.reload()">Refresh Page</button>
+    `;
+    chatContainer.appendChild(errorMsg);
+  }
+</script>
 </body>
 </html>
