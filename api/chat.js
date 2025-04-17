@@ -153,7 +153,7 @@ When all nodes are green:
       .replace(/\(Topic\)/g, topic);
 
     // Check for generic responses and adjust accordingly
-    if (personalizedReply.includes("I'm a machine learning model trained to assist users")) {
+    if (personalizedReply.includes("I'm an AI designed to facilitate conversation")) {
       const adjustedReply = `Great to meet you, ${name}! I'm excited to help you learn about ${topic} in ${grade}. Do you have any prior knowledge about fractions, or shall we start from the basics?`;
       conversationHistory.push({ role: 'assistant', content: adjustedReply });
       res.status(200).json({ message: adjustedReply });
