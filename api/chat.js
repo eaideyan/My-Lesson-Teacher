@@ -1,4 +1,5 @@
 let conversationHistory = [];  // Initialize an array to store conversation history
+let masteryProgress = [];  // Array to track mastery of each node
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -152,10 +153,27 @@ When all nodes are green:
     // Add the assistant's reply to the conversation history
     conversationHistory.push({ role: 'assistant', content: reply });
 
+    // Check for mastery condition (this is a placeholder; implement your scoring logic)
+    const score = calculateScore(); // Implement this function based on your assessment logic
+    if (score >= 85) {
+      masteryProgress.push(true); // Mark this node as mastered
+      reply += "\n🟩 Node mastered! 🎉"; // Append mastery message
+    } else {
+      masteryProgress.push(false); // Mark this node as not mastered
+      reply += "\nLet's review this topic again."; // Append review message
+    }
+
     // Send the response back to the front-end
-    res.status(200).json({ message: reply });  
+    res.status(200).json({ message: reply, progress: masteryProgress });  
   } catch (err) {
     console.error(err);  // Log any errors for debugging
     res.status(500).json({ message: 'Error calling OpenAI' });
   }
+}
+
+// Placeholder function to calculate score based on user responses
+function calculateScore() {
+  // Implement your logic to calculate the score based on the user's answers
+  // For example, return a random score for demonstration purposes
+  return Math.floor(Math.random() * 100); // Replace with actual scoring logic
 }
