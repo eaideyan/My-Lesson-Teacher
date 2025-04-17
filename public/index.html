@@ -1,150 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Tutor</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mr. E – Your AI Tutor</title>
   <style>
     body {
-      font-family: "Segoe UI", sans-serif;
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
       margin: 0;
       padding: 0;
-      background-color: #f4f7fa;
-      color: #333;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
 
-    .container {
-      max-width: 700px;
-      margin: 40px auto;
-      background: #fff;
-      border-radius: 12px;
-      padding: 30px 40px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
+    header {
+      background-color: #1e3a8a;
+      color: white;
+      padding: 1rem;
       text-align: center;
-      margin-bottom: 25px;
-      color: #2c3e50;
+      font-size: 1.5rem;
     }
 
-    #chat-container {
-      margin-top: 30px;
-      max-height: 400px;
+    #chat {
+      flex: 1;
+      padding: 1rem;
       overflow-y: auto;
-      border-top: 1px solid #ddd;
-      padding-top: 20px;
+      background-color: #fff;
+      border-top: 1px solid #ccc;
     }
 
-    .message {
-      margin: 10px 0;
-      padding: 12px 16px;
+    #chat div {
+      margin: 0.5rem 0;
+      padding: 0.5rem 1rem;
       border-radius: 10px;
-      max-width: 90%;
+      max-width: 75%;
+      white-space: pre-wrap;
     }
 
     .user {
-      background-color: #e8f0fe;
+      background-color: #dcfce7;
       align-self: flex-end;
-      text-align: right;
+      margin-left: auto;
     }
 
-    .bot {
-      background-color: #f1f1f1;
+    .assistant {
+      background-color: #e0e7ff;
       align-self: flex-start;
+      margin-right: auto;
     }
 
-    #chatbox-input {
+    #chat-form {
       display: flex;
-      gap: 10px;
-      margin-top: 15px;
+      padding: 1rem;
+      border-top: 1px solid #ccc;
+      background-color: #fafafa;
     }
 
-    #userMessage {
-      flex-grow: 1;
-      padding: 10px 14px;
+    #message {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 8px;
-      font-size: 16px;
+      margin-right: 0.5rem;
     }
 
     button {
-      padding: 12px;
-      background-color: #007bff;
+      padding: 0.5rem 1rem;
+      background-color: #1e3a8a;
       color: white;
-      font-weight: bold;
       border: none;
       border-radius: 8px;
+      font-size: 1rem;
       cursor: pointer;
-      transition: background 0.3s ease;
     }
 
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    @media screen and (max-width: 600px) {
-      .container {
-        padding: 20px;
-      }
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Welcome to Your AI Tutor</h2>
-    <div id="chat-container"></div>
 
-    <div id="chatbox-input" style="display: flex;">
-      <input type="text" id="userMessage" placeholder="Type your message..." />
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
+  <header>Welcome to Mr. E – Your AI Tutor 🇳🇬</header>
+
+  <div id="chat"></div>
+
+  <form id="chat-form">
+    <input type="text" id="message" placeholder="Type your message..." autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
 
   <script>
-    const chatContainer = document.getElementById("chat-container");
-    const userInput = document.getElementById("userMessage");
+    const chatContainer = document.getElementById('chat');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('message');
 
-    // Function to start the chat with Mr. E
-    async function startChat() {
-      addMessage("bot", "Welcome to Your AI Tutor! I’m Mr. E, your lesson teacher! What’s your name, grade, and what topic would you like to learn today? 🌟");
+    // 🧠 Stores full chat history
+    const conversation = [];
+
+    function appendMessage(sender, text) {
+      const messageElem = document.createElement('div');
+      messageElem.className = sender;
+      messageElem.innerText = `${sender === 'user' ? 'You' : 'Mr. E'}: ${text}`;
+      chatContainer.appendChild(messageElem);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    async function sendMessage() {
-      const message = userInput.value.trim();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
       if (!message) return;
 
-      addMessage("user", message);
-      addMessage("bot", "Typing...");
+      appendMessage('user', message);
+      conversation.push({ role: 'user', content: message });
 
-      // Send the message to the server
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })  // Send the user's message
-      });
+      input.value = '';
+      input.placeholder = 'Mr. E is thinking...';
+      input.disabled = true;
 
-      const result = await response.json();
-      updateLastBotMessage(result.message || "Sorry, I couldn't generate a reply.");
-      userInput.value = "";
-    }
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversation })
+        });
 
-    function addMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-      msg.innerText = text;
-      chatContainer.appendChild(msg);
-      chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
-    }
+        const data = await response.json();
+        const reply = data.message;
 
-    function updateLastBotMessage(newText) {
-      const botMessages = document.querySelectorAll(".message.bot");
-      const lastBot = botMessages[botMessages.length - 1];
-      if (lastBot) lastBot.innerText = newText;
-    }
+        conversation.push({ role: 'assistant', content: reply });
+        appendMessage('assistant', reply);
+      } catch (err) {
+        appendMessage('assistant', "Oops! Something went wrong.");
+      }
 
-    // Start the chat when the page loads
-    window.onload = startChat;
-  </script>
-</body>
-</html>
+      input.placeholder = 'Type your message...';
+      input.disabled = false;
+      input.focus();
+    });
+
+    // Optional: welcome message
