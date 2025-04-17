@@ -126,14 +126,15 @@ When all nodes are green:
   }
 
   try {
-    const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Generate a response based on the user's message using Gemini 1.5 Pro
+    const apiRes = await fetch('https://api.gemini.com/v1/chat/completions', { // Update the endpoint for Gemini
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,  // Ensure API key is set in your environment variables
+        'Authorization': `Bearer ${process.env.GEMINI_API_KEY}`,  // Ensure API key is set in your environment variables
       },
       body: JSON.stringify({
-        model: 'gpt-4',  // Ensure GPT-4 is correctly specified
+        model: 'gemini-1.5-pro',  // Specify the Gemini model
         messages: conversationHistory  // Send the entire conversation history
       })
     });
@@ -152,17 +153,10 @@ When all nodes are green:
       .replace(/\(Subject\)/g, "Mathematics") // Assuming the subject is Mathematics for fractions
       .replace(/\(Topic\)/g, topic);
 
-    // Check for generic responses and adjust accordingly
-    if (personalizedReply.includes("I'm an AI designed to facilitate conversation")) {
-      const adjustedReply = `Great to meet you, ${name}! I'm excited to help you learn about ${topic} in ${grade}. Do you have any prior knowledge about fractions, or shall we start from the basics?`;
-      conversationHistory.push({ role: 'assistant', content: adjustedReply });
-      res.status(200).json({ message: adjustedReply });
-      return; // Exit early to avoid sending the original reply
-    }
-
-    res.status(200).json({ message: personalizedReply });  // Send the personalized response back to the front-end
+    // Send the personalized response back to the front-end
+    res.status(200).json({ message: personalizedReply });
   } catch (err) {
     console.error(err);  // Log any errors for debugging
-    res.status(500).json({ message: 'Error calling OpenAI' });
+    res.status(500).json({ message: 'Error calling Gemini API' });
   }
 }
