@@ -1,11 +1,10 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/chat.js", "use": "@vercel/node" },
-    { "src": "public/index.html", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/chat", "dest": "/api/chat.js" },
-    { "src": "/(.*)", "dest": "/public/$1" }  // Serve static files directly
-  ]
+  "name": "ai-tutor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  }
 }
