@@ -20,7 +20,7 @@ Start every session with:
 "Welcome to Your AI Tutor!  
 I’m Mr. E, your lesson teacher! What’s your name, grade, and what topic would you like to learn today? 🌟"  
 After the student responds:  
-"Great to meet you, ${name}! 🎉 I’m excited to help you learn ${topic} in ${grade}.  
+"Great to meet you, ${name}! 🎉 I’m excited to help you learn about ${topic} in ${grade}.  
 Do you have any previous learning history to load? If not, we start fresh!"
 
 ---
@@ -41,14 +41,6 @@ Example Display:
 1. Understanding ${topic}  
 2. Basics of ${topic}  
 3. Comparing ${topic}...  
-
-Example for ${topic}:  
-- Remember: Define "${topic}"  
-- Understand: Explain key roles  
-- Apply: Solve a problem using manipulatives  
-- Analyze: Compare examples  
-- Evaluate: Debate a relevant question  
-- Create: Design a game related to ${topic}  
 
 ---
 
@@ -151,6 +143,14 @@ When all nodes are green:
 
     // Add the assistant's reply to the conversation history
     conversationHistory.push({ role: 'assistant', content: reply });
+
+    // Check if the response is generic and adjust accordingly
+    if (reply.includes("I'm an AI developed to provide a framework for teaching")) {
+      const adjustedReply = `Thank you for your input, ${name}! Let's focus on your learning journey. What specific aspect of ${topic} would you like to start with?`;
+      conversationHistory.push({ role: 'assistant', content: adjustedReply });
+      res.status(200).json({ message: adjustedReply });
+      return; // Exit early to avoid sending the original reply
+    }
 
     res.status(200).json({ message: reply });  // Send the response back to the front-end
   } catch (err) {
