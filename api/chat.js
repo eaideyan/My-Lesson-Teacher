@@ -146,15 +146,15 @@ When all nodes are green:
     // Add the assistant's reply to the conversation history
     conversationHistory.push({ role: 'assistant', content: reply });
 
-    // Check for placeholders and replace them with actual values
+    // Personalize the response
     const personalizedReply = reply
       .replace(/\(Name\)/g, name)
-      .replace(/\(Subject\)/g, "Math") // Assuming the subject is Math for fractions
+      .replace(/\(Subject\)/g, "Mathematics") // Assuming the subject is Mathematics for fractions
       .replace(/\(Topic\)/g, topic);
 
-    // Check if the response is generic and adjust accordingly
-    if (personalizedReply.includes("I'm an AI developed to provide a framework for teaching")) {
-      const adjustedReply = `Thank you for your input, ${name}! Let's focus on your learning journey. What specific aspect of ${topic} would you like to start with?`;
+    // Check for generic responses and adjust accordingly
+    if (personalizedReply.includes("I'm a machine learning model trained to assist users")) {
+      const adjustedReply = `Great to meet you, ${name}! I'm excited to help you learn about ${topic} in ${grade}. Do you have any prior knowledge about fractions, or shall we start from the basics?`;
       conversationHistory.push({ role: 'assistant', content: adjustedReply });
       res.status(200).json({ message: adjustedReply });
       return; // Exit early to avoid sending the original reply
