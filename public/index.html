@@ -2,128 +2,193 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mr. E – Your AI Tutor 🇳🇬</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #fefefe;
-      color: #222;
+      font-family: 'Nunito', sans-serif;
+      background-color: #f5f7fa;
+      margin: 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-      margin: 0;
+      height: 100vh;
     }
-    h1 {
-      color: #007b5f;
-    }
-    #chat {
-      width: 100%;
-      max-width: 600px;
-      height: 500px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+
+    header {
+      background-color: #2563eb;
+      color: white;
       padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    #chat {
+      flex: 1;
       overflow-y: auto;
-      background-color: #fff;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      margin-bottom: 1rem;
-    }
-    .message {
-      margin-bottom: 1rem;
-      padding: 0.5rem 0.8rem;
-      border-radius: 8px;
-      line-height: 1.5;
-    }
-    .user {
-      background-color: #e0f7fa;
-      text-align: right;
-    }
-    .assistant {
-      background-color: #fff9c4;
-      text-align: left;
-    }
-    #input-area {
+      padding: 1rem;
       display: flex;
-      width: 100%;
-      max-width: 600px;
+      flex-direction: column;
+      gap: 0.75rem;
     }
+
+    .message-row {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      margin: 0 8px;
+      flex-shrink: 0;
+    }
+
+    .user .avatar {
+      background-color: #e0f2fe;
+      content: 'You';
+    }
+
+    .assistant .avatar {
+      background-image: url('https://cdn-icons-png.flaticon.com/512/1995/1995471.png');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 0.75rem 1rem;
+      border-radius: 16px;
+      font-size: 1rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .bubble.user {
+      background-color: #c7f0d8;
+      border-bottom-right-radius: 0;
+    }
+
+    .bubble.assistant {
+      background-color: #e0e7ff;
+      border-bottom-left-radius: 0;
+    }
+
+    form {
+      display: flex;
+      padding: 1rem;
+      background-color: #ffffff;
+      border-top: 1px solid #ddd;
+    }
+
     input {
       flex: 1;
-      padding: 0.75rem;
-      border-radius: 8px 0 0 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border-radius: 10px 0 0 10px;
       border: 1px solid #ccc;
-      font-size: 1rem;
+      outline: none;
     }
+
     button {
-      padding: 0 1.5rem;
-      border: none;
-      background-color: #007b5f;
+      background-color: #2563eb;
       color: white;
+      padding: 0 1.5rem;
       font-size: 1rem;
+      border: none;
+      border-radius: 0 10px 10px 0;
       cursor: pointer;
-      border-radius: 0 8px 8px 0;
     }
+
     button:hover {
-      background-color: #005f47;
+      background-color: #1e40af;
+    }
+
+    @media (max-width: 600px) {
+      .bubble {
+        max-width: 85%;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Mr. E – Your AI Tutor 🇳🇬</h1>
+
+  <header>Mr. E – Your AI Tutor 🇳🇬</header>
+
   <div id="chat"></div>
 
-  <form id="input-area">
+  <form id="chat-form">
     <input type="text" id="messageInput" placeholder="Type your message..." required />
     <button type="submit">Send</button>
   </form>
 
   <script>
     const chatBox = document.getElementById('chat');
-    const form = document.getElementById('input-area');
+    const form = document.getElementById('chat-form');
     const input = document.getElementById('messageInput');
 
-    // Keep full conversation here
     let conversation = [];
 
-    function addMessageToChat(content, role) {
-      const msg = document.createElement('div');
-      msg.className = `message ${role}`;
-      msg.textContent = content;
-      chatBox.appendChild(msg);
+    function addMessage(content, role) {
+      const row = document.createElement('div');
+      row.className = `message-row ${role}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = `avatar ${role}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${role}`;
+      bubble.textContent = content;
+
+      if (role === 'assistant') {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+      } else {
+        row.appendChild(bubble);
+        row.appendChild(avatar);
+      }
+
+      chatBox.appendChild(row);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     async function sendMessage(message) {
-      // Add user message to conversation
       conversation.push({ role: 'user', content: message });
-      addMessageToChat(message, 'user');
+      addMessage(message, 'user');
 
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message })
         });
 
         const data = await res.json();
         const reply = data.message;
 
-        // Add assistant message to conversation
         conversation.push({ role: 'assistant', content: reply });
-        addMessageToChat(reply, 'assistant');
+        addMessage(reply, 'assistant');
       } catch (err) {
-        addMessageToChat("⚠️ Error: Couldn't reach Mr. E. Try again.", 'assistant');
+        addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
       }
     }
 
-    // First greeting to trigger system prompt
     window.onload = () => {
       sendMessage("Hello");
     };
 
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       const message = input.value.trim();
       if (!message) return;
@@ -131,5 +196,6 @@
       sendMessage(message);
     });
   </script>
+
 </body>
 </html>
