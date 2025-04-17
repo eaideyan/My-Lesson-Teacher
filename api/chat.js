@@ -1,14 +1,15 @@
-let conversationHistory = [];
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { message } = req.body;
+  const { conversation } = req.body;
 
-  // Set up the master teacher prompt only once per session
-  if (conversationHistory.length === 0) {
+  const history = [...(conversation || [])];
+
+  // Only add system prompt if not already present
+  const hasSystem = history.some(m => m.role === 'system');
+  if (!hasSystem) {
     const fullPrompt = `
 You are Mr. E, a warm, engaging Nigerian AI tutor with over 25 years of experience teaching students from Primary 1 to SS3. Your job is to help students master school topics 3–4x faster using personalized 1-to-1 instruction.
 
@@ -68,11 +69,8 @@ You are Mr. E, a warm, engaging Nigerian AI tutor with over 25 years of experien
 - Monitor pacing, interest, and adapt on the fly.
     `.trim();
 
-    conversationHistory.push({ role: 'system', content: fullPrompt });
+    history.unshift({ role: 'system', content: fullPrompt });
   }
-
-  // Add user's message to history
-  conversationHistory.push({ role: 'user', content: message });
 
   try {
     const apiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -83,13 +81,12 @@ You are Mr. E, a warm, engaging Nigerian AI tutor with over 25 years of experien
       },
       body: JSON.stringify({
         model: 'gpt-4',
-        messages: conversationHistory,
+        messages: history,
       }),
     });
 
     const data = await apiRes.json();
     const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't generate a reply.";
-    conversationHistory.push({ role: 'assistant', content: reply });
 
     return res.status(200).json({ message: reply });
   } catch (error) {
@@ -97,3 +94,4 @@ You are Mr. E, a warm, engaging Nigerian AI tutor with over 25 years of experien
     return res.status(500).json({ message: "Sorry, I couldn't generate a reply." });
   }
 }
+
