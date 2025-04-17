@@ -1,66 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mr. E – Your AI Tutor</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
       margin: 0;
-      padding: 0;
+      font-family: "Segoe UI", sans-serif;
       display: flex;
       flex-direction: column;
       height: 100vh;
+      background-color: #f8fafc;
     }
 
     header {
-      background-color: #1e3a8a;
+      background-color: #1e40af;
       color: white;
-      padding: 1rem;
       text-align: center;
+      padding: 1rem;
       font-size: 1.5rem;
     }
 
     #chat {
       flex: 1;
-      padding: 1rem;
       overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
       background-color: #fff;
-      border-top: 1px solid #ccc;
     }
 
-    #chat div {
-      margin: 0.5rem 0;
-      padding: 0.5rem 1rem;
-      border-radius: 10px;
-      max-width: 75%;
+    .message {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
       white-space: pre-wrap;
     }
 
     .user {
       background-color: #dcfce7;
       align-self: flex-end;
-      margin-left: auto;
     }
 
     .assistant {
       background-color: #e0e7ff;
       align-self: flex-start;
-      margin-right: auto;
     }
 
-    #chat-form {
+    form {
       display: flex;
       padding: 1rem;
       border-top: 1px solid #ccc;
-      background-color: #fafafa;
+      background: #f1f5f9;
     }
 
-    #message {
+    input {
       flex: 1;
-      padding: 0.5rem;
+      padding: 0.75rem;
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -68,24 +66,24 @@
     }
 
     button {
-      padding: 0.5rem 1rem;
-      background-color: #1e3a8a;
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      background-color: #1e40af;
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
       cursor: pointer;
     }
 
     button:disabled {
-      background-color: #999;
+      background-color: #9ca3af;
       cursor: not-allowed;
     }
   </style>
 </head>
 <body>
 
-  <header>Welcome to Mr. E – Your AI Tutor 🇳🇬</header>
+  <header>Mr. E – Your AI Tutor 🇳🇬</header>
 
   <div id="chat"></div>
 
@@ -95,52 +93,62 @@
   </form>
 
   <script>
-    const chatContainer = document.getElementById('chat');
+    const chat = document.getElementById('chat');
     const form = document.getElementById('chat-form');
     const input = document.getElementById('message');
-
-    // 🧠 Stores full chat history
     const conversation = [];
 
-    function appendMessage(sender, text) {
-      const messageElem = document.createElement('div');
-      messageElem.className = sender;
-      messageElem.innerText = `${sender === 'user' ? 'You' : 'Mr. E'}: ${text}`;
-      chatContainer.appendChild(messageElem);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+    function appendMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.innerText = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage(message) {
+      appendMessage('user', message);
+      conversation.push({ role: 'user', content: message });
+
+      input.disabled = true;
+      input.placeholder = "Mr. E is thinking...";
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation })
+      });
+
+      const data = await res.json();
+      const reply = data.message;
+      conversation.push({ role: 'assistant', content: reply });
+      appendMessage('assistant', reply);
+
+      input.disabled = false;
+      input.placeholder = "Type your message...";
+      input.focus();
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const message = input.value.trim();
       if (!message) return;
-
-      appendMessage('user', message);
-      conversation.push({ role: 'user', content: message });
-
       input.value = '';
-      input.placeholder = 'Mr. E is thinking...';
-      input.disabled = true;
-
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversation })
-        });
-
-        const data = await response.json();
-        const reply = data.message;
-
-        conversation.push({ role: 'assistant', content: reply });
-        appendMessage('assistant', reply);
-      } catch (err) {
-        appendMessage('assistant', "Oops! Something went wrong.");
-      }
-
-      input.placeholder = 'Type your message...';
-      input.disabled = false;
-      input.focus();
+      await sendMessage(message);
     });
 
-    // Optional: welcome message
+    // 🔥 Start the conversation by calling /api/chat with an empty conversation
+    window.addEventListener('load', async () => {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation: [] })
+      });
+      const data = await res.json();
+      conversation.push({ role: 'assistant', content: data.message });
+      appendMessage('assistant', data.message);
+    });
+  </script>
+
+</body>
+</html>
