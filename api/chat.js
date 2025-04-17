@@ -38,9 +38,11 @@ Format requirements:
 Example Display:  
 📘 Topic: ${topic}  
 🧠 Your Knowledge Path:  
-1. Understanding ${topic}  
-2. Basics of ${topic}  
-3. Comparing ${topic}...  
+1. Introduction to ${topic}  
+2. The Basics of ${topic}  
+3. Understanding the Key Components of ${topic}  
+4. Applying ${topic} in Real Life Situations  
+5. Advanced Concepts of ${topic}  
 
 ---
 
@@ -51,9 +53,9 @@ Per Node Protocol:
    - Localized examples ("If sharing puff-puff between 3 friends...").  
    - One question at a time.  
    - Sample Questions:  
-     - Recall: "What is a ${topic}?"  
-     - Application: "If you have 2/4 of a ${topic} and eat 1/4, how much is left?"  
-     - Analysis: "How would you explain ${topic} to a friend?"  
+     - Recall: "What is a fraction?"  
+     - Application: "If you have 2/4 of a pizza and eat 1/4, how much is left?"  
+     - Analysis: "How would you explain fractions to a friend?"  
 
 2. Scoring & Feedback  
    - Internal % tracking.  
@@ -144,15 +146,21 @@ When all nodes are green:
     // Add the assistant's reply to the conversation history
     conversationHistory.push({ role: 'assistant', content: reply });
 
+    // Check for placeholders and replace them with actual values
+    const personalizedReply = reply
+      .replace(/\(Name\)/g, name)
+      .replace(/\(Subject\)/g, "Math") // Assuming the subject is Math for fractions
+      .replace(/\(Topic\)/g, topic);
+
     // Check if the response is generic and adjust accordingly
-    if (reply.includes("I'm an AI developed to provide a framework for teaching")) {
+    if (personalizedReply.includes("I'm an AI developed to provide a framework for teaching")) {
       const adjustedReply = `Thank you for your input, ${name}! Let's focus on your learning journey. What specific aspect of ${topic} would you like to start with?`;
       conversationHistory.push({ role: 'assistant', content: adjustedReply });
       res.status(200).json({ message: adjustedReply });
       return; // Exit early to avoid sending the original reply
     }
 
-    res.status(200).json({ message: reply });  // Send the response back to the front-end
+    res.status(200).json({ message: personalizedReply });  // Send the personalized response back to the front-end
   } catch (err) {
     console.error(err);  // Log any errors for debugging
     res.status(500).json({ message: 'Error calling OpenAI' });
