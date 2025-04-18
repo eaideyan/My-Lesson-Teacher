@@ -199,6 +199,7 @@
       <button type="button" class="clear-button" id="clearButton">🗑️ Clear</button>
     </div>
   </form>
+
   <script>
     const chatBox = document.getElementById('chat');
     const form = document.getElementById('chat-form');
@@ -208,6 +209,7 @@
     const speakToggle = document.getElementById('speakToggle');
     let conversation = [];
     let studentName = '';
+    let thinkingRow = null;
 
     function addMessage(content, role) {
       const row = document.createElement('div');
@@ -229,6 +231,7 @@
       }
       chatBox.appendChild(row);
       chatBox.scrollTop = chatBox.scrollHeight;
+      return row;
     }
 
     function speak(text) {
@@ -241,11 +244,15 @@
     }
 
     async function sendMessage(message) {
-      if (!studentName && /my name is (\w+)/i.test(message)) {
-        studentName = message.match(/my name is (\w+)/i)[1];
+      if (!studentName && /my name is (\\w+)/i.test(message)) {
+        studentName = message.match(/my name is (\\w+)/i)[1];
       }
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
+
+      // Mr. E is thinking bubble
+      thinkingRow = addMessage('💭 Mr. E is thinking...', 'assistant');
+
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -254,12 +261,15 @@
         });
         const data = await res.json();
         let reply = data.message;
-        reply = reply.replace(/Do you understand\?.*?/gi, 'Do you understand?');
+        reply = reply.replace(/Do you understand\\?.*?/gi, 'Do you understand?');
         conversation.push({ role: 'assistant', content: reply });
+
+        if (thinkingRow) thinkingRow.remove();
         addMessage(reply, 'assistant');
         speak(reply);
       } catch (err) {
-        addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
+        if (thinkingRow) thinkingRow.remove();
+        addMessage('⚠️ Something went wrong. Please try again later.', 'assistant');
       }
     }
 
