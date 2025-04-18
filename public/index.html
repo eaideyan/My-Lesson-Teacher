@@ -81,7 +81,7 @@
       border-bottom-right-radius: 0;
     }
     .bubble.user::after {
-      content: var(--student-name, 'You');
+      content: 'You';
       font-size: 0.75rem;
       color: #1e3a8a;
       position: absolute;
@@ -156,7 +156,7 @@
 <body>
   <header>Mr. E – Your AI Tutor 🇳🇬</header>
   <label class="speak-toggle">
-    <input type="checkbox" id="speakToggle" /> 🔊 Mr. E Speaks
+    <input type="checkbox" id="speakToggle" checked /> 🔊 Mr. E Speaks
   </label>
   <main id="wrapper">
     <div id="chat"></div>
@@ -176,7 +176,6 @@
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
     let conversation = JSON.parse(localStorage.getItem('mrETutorChat')) || [];
-    let studentName = localStorage.getItem('mrEStudentName') || 'You';
 
     function addMessage(content, role, tempId = null) {
       const row = document.createElement('div');
@@ -187,7 +186,6 @@
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
       bubble.textContent = content;
-      if (role === 'user') bubble.style.setProperty('--student-name', `'${studentName}'`);
       if (role === 'assistant') {
         row.appendChild(avatar);
         row.appendChild(bubble);
@@ -218,13 +216,6 @@
     }
 
     async function sendMessage(message) {
-      if (conversation.length === 0 && message.toLowerCase().includes('my name is')) {
-        const match = message.match(/my name is (\w+)/i);
-        if (match) {
-          studentName = match[1];
-          localStorage.setItem('mrEStudentName', studentName);
-        }
-      }
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
       saveConversation();
@@ -272,9 +263,7 @@
 
     clearButton.addEventListener('click', () => {
       localStorage.removeItem('mrETutorChat');
-      localStorage.removeItem('mrEStudentName');
       conversation = [];
-      studentName = 'You';
       chatBox.innerHTML = '';
     });
 
