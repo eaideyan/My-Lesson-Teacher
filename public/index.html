@@ -14,6 +14,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      overflow: hidden;
     }
     header {
       background-color: #2563eb;
@@ -32,10 +33,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      max-width: 720px;
+      max-width: 800px;
       margin: 0 auto;
       width: 100%;
       padding: 1rem;
+      overflow: hidden;
     }
     #chat {
       flex: 1;
@@ -78,6 +80,15 @@
     .bubble.user {
       background-color: #c7f0d8;
       border-bottom-right-radius: 0;
+      position: relative;
+    }
+    .bubble.user::after {
+      content: attr(data-name);
+      font-size: 0.75rem;
+      color: #1e3a8a;
+      position: absolute;
+      bottom: -1.2rem;
+      right: 1rem;
     }
     .bubble.assistant {
       background-color: #e0e7ff;
@@ -86,9 +97,14 @@
     form {
       width: 100%;
       display: flex;
-      align-items: center;
-      margin-top: 1rem;
+      align-items: flex-start;
+      justify-content: space-between;
       gap: 0.5rem;
+      margin-top: 1rem;
+      background: #fff;
+      border-radius: 16px;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
     }
     textarea {
       flex: 1;
@@ -102,48 +118,42 @@
       overflow-y: auto;
       line-height: 1.5rem;
     }
+    #controls {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
     button {
       background-color: #2563eb;
       color: white;
-      padding: 0.75rem 1rem;
+      padding: 0.5rem 1rem;
       font-size: 1rem;
       border: none;
       border-radius: 12px;
       cursor: pointer;
     }
-    button:hover { background-color: #1e40af; }
+    button:hover {
+      background-color: #1e40af;
+    }
     .clear-button {
       background-color: orange;
-      font-size: 0.85rem;
       padding: 0.5rem 0.6rem;
+      font-size: 0.85rem;
       width: 60%;
     }
     .clear-button:hover { background-color: darkorange; }
-    #controls {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .speak-toggle {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      font-size: 0.9rem;
-    }
     #micButton {
-      padding: 0.75rem;
+      padding: 0.6rem;
       width: 42px;
-      text-align: center;
       font-size: 1.1rem;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <header>Mr. E – Your AI Tutor 🇳🇬</header>
-
+  <header>Mr. E – Your AI Tutor <span style="font-size: 0.8rem;">NG</span></header>
   <main id="wrapper">
     <div id="chat"></div>
-
     <form id="chat-form">
       <textarea id="messageInput" placeholder="Type your message..." required></textarea>
       <div id="controls">
@@ -153,7 +163,6 @@
       </div>
     </form>
   </main>
-
   <script>
     const chatBox = document.getElementById('chat');
     const form = document.getElementById('chat-form');
@@ -161,6 +170,7 @@
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
     let conversation = [];
+    let studentName = '';
 
     function addMessage(content, role) {
       const row = document.createElement('div');
@@ -170,6 +180,9 @@
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
       bubble.textContent = content;
+      if (role === 'user') {
+        bubble.setAttribute('data-name', studentName || '');
+      }
       if (role === 'assistant') {
         row.appendChild(avatar);
         row.appendChild(bubble);
@@ -192,6 +205,9 @@
     }
 
     async function sendMessage(message) {
+      if (!studentName && /my name is (\w+)/i.test(message)) {
+        studentName = message.match(/my name is (\w+)/i)[1];
+      }
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
       try {
@@ -234,6 +250,7 @@
     clearButton.addEventListener('click', () => {
       conversation = [];
       chatBox.innerHTML = '';
+      studentName = '';
       window.onload();
     });
 
