@@ -2,14 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mr. E – Your AI Tutor 🇳🇬</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       font-family: 'Nunito', sans-serif;
       background-color: #f5f7fa;
@@ -18,28 +15,28 @@
       flex-direction: column;
       height: 100vh;
     }
-
     header {
       background-color: #2563eb;
       color: white;
       padding: 1rem;
       text-align: center;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
       letter-spacing: 0.5px;
     }
-
     main#wrapper {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1rem;
-      max-width: 720px; /* 1.5x increased width */
+      max-width: 720px;
       margin: 0 auto;
       width: 100%;
+      padding: 1rem;
     }
-
     #chat {
       flex: 1;
       width: 100%;
@@ -51,18 +48,12 @@
       border: 1px solid #ddd;
       border-radius: 16px;
       background: #fff;
-      height: 65vh;
     }
-
     .message-row {
       display: flex;
       align-items: flex-start;
     }
-
-    .message-row.user {
-      justify-content: flex-end;
-    }
-
+    .message-row.user { justify-content: flex-end; }
     .avatar {
       width: 36px;
       height: 36px;
@@ -70,17 +61,12 @@
       margin: 0 8px;
       flex-shrink: 0;
     }
-
-    .user .avatar {
-      background-color: #bae6fd;
-    }
-
+    .user .avatar { background-color: #bae6fd; }
     .assistant .avatar {
       background-image: url('https://cdn-icons-png.flaticon.com/512/1995/1995471.png');
       background-size: cover;
       background-position: center;
     }
-
     .bubble {
       max-width: 75%;
       padding: 0.75rem 1rem;
@@ -89,17 +75,14 @@
       line-height: 1.5;
       white-space: pre-wrap;
     }
-
     .bubble.user {
       background-color: #c7f0d8;
       border-bottom-right-radius: 0;
     }
-
     .bubble.assistant {
       background-color: #e0e7ff;
       border-bottom-left-radius: 0;
     }
-
     form {
       width: 100%;
       display: flex;
@@ -107,7 +90,6 @@
       margin-top: 1rem;
       gap: 0.5rem;
     }
-
     textarea {
       flex: 1;
       padding: 0.75rem 1rem;
@@ -115,40 +97,48 @@
       border-radius: 12px;
       border: 1px solid #ccc;
       resize: none;
-      max-height: 5.5rem; /* Around 3 lines */
+      max-height: 5.5rem;
       min-height: 3.5rem;
       overflow-y: auto;
       line-height: 1.5rem;
     }
-
     button {
       background-color: #2563eb;
       color: white;
-      padding: 0.75rem 1.5rem;
+      padding: 0.75rem 1rem;
       font-size: 1rem;
       border: none;
       border-radius: 12px;
       cursor: pointer;
     }
-
-    button:hover {
-      background-color: #1e40af;
+    button:hover { background-color: #1e40af; }
+    .clear-button {
+      background-color: orange;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.6rem;
+      width: 60%;
     }
-
-    @media (max-width: 600px) {
-      main#wrapper {
-        max-width: 100%;
-        padding: 0.5rem;
-      }
-
-      .bubble {
-        max-width: 85%;
-      }
+    .clear-button:hover { background-color: darkorange; }
+    #controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .speak-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.9rem;
+    }
+    #micButton {
+      padding: 0.75rem;
+      width: 42px;
+      text-align: center;
+      font-size: 1.1rem;
     }
   </style>
 </head>
 <body>
-
   <header>Mr. E – Your AI Tutor 🇳🇬</header>
 
   <main id="wrapper">
@@ -156,7 +146,11 @@
 
     <form id="chat-form">
       <textarea id="messageInput" placeholder="Type your message..." required></textarea>
-      <button type="submit">Send</button>
+      <div id="controls">
+        <button type="submit">Send</button>
+        <button type="button" id="micButton">🎤</button>
+        <button type="button" class="clear-button" id="clearButton">Clear Chat</button>
+      </div>
     </form>
   </main>
 
@@ -164,19 +158,18 @@
     const chatBox = document.getElementById('chat');
     const form = document.getElementById('chat-form');
     const input = document.getElementById('messageInput');
+    const micButton = document.getElementById('micButton');
+    const clearButton = document.getElementById('clearButton');
     let conversation = [];
 
     function addMessage(content, role) {
       const row = document.createElement('div');
       row.className = `message-row ${role}`;
-
       const avatar = document.createElement('div');
       avatar.className = `avatar ${role}`;
-
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
       bubble.textContent = content;
-
       if (role === 'assistant') {
         row.appendChild(avatar);
         row.appendChild(bubble);
@@ -184,37 +177,43 @@
         row.appendChild(bubble);
         row.appendChild(avatar);
       }
-
       chatBox.appendChild(row);
       chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function speak(text) {
+      const toggle = false;
+      if (!toggle) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-NG';
+      utterance.pitch = 1;
+      utterance.rate = 1;
+      speechSynthesis.speak(utterance);
     }
 
     async function sendMessage(message) {
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
-
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ conversation })
         });
-
         const data = await res.json();
         const reply = data.message;
-
         conversation.push({ role: 'assistant', content: reply });
         addMessage(reply, 'assistant');
+        speak(reply);
       } catch (err) {
         addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
       }
     }
 
-    // Trigger intro on page load
     window.onload = () => {
-      const intro = "Hello";
-      conversation.push({ role: 'user', content: intro });
-      sendMessage(intro);
+      const intro = "Welcome to Your AI Tutor! 🌟 I’m Mr. E, your lesson teacher!\nWhat’s your name, grade, and what topic would you like to learn today?";
+      conversation.push({ role: 'assistant', content: intro });
+      addMessage(intro, 'assistant');
     };
 
     form.addEventListener('submit', (e) => {
@@ -224,7 +223,42 @@
       input.value = '';
       sendMessage(message);
     });
-  </script>
 
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        form.dispatchEvent(new Event('submit'));
+      }
+    });
+
+    clearButton.addEventListener('click', () => {
+      conversation = [];
+      chatBox.innerHTML = '';
+      window.onload();
+    });
+
+    const recognition = ('webkitSpeechRecognition' in window) ? new webkitSpeechRecognition() : null;
+    if (recognition) {
+      recognition.continuous = false;
+      recognition.lang = 'en-NG';
+      recognition.interimResults = false;
+      micButton.addEventListener('click', () => {
+        recognition.start();
+        micButton.textContent = '🎙️';
+      });
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        input.value = transcript;
+        sendMessage(transcript);
+        input.value = '';
+        micButton.textContent = '🎤';
+      };
+      recognition.onerror = () => { micButton.textContent = '🎤'; };
+      recognition.onend = () => { micButton.textContent = '🎤'; };
+    } else {
+      micButton.disabled = true;
+      micButton.title = "Voice input not supported on this browser.";
+    }
+  </script>
 </body>
 </html>
