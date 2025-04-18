@@ -145,86 +145,89 @@
         max-width: 85%;
       }
     }
-  </style>
-</head>
-<body>
+ <script>
+  const chatBox = document.getElementById('chat');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('messageInput');
+  let conversation = JSON.parse(localStorage.getItem('mrETutorChat')) || [];
 
-  <header>Mr. E – Your AI Tutor 🇳🇬</header>
+  function addMessage(content, role, tempId = null) {
+    const row = document.createElement('div');
+    row.className = `message-row ${role}`;
+    row.dataset.messageId = tempId || '';
 
-  <main id="wrapper">
-    <div id="chat"></div>
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${role}`;
 
-    <form id="chat-form">
-      <textarea id="messageInput" placeholder="Type your message..." required></textarea>
-      <button type="submit">Send</button>
-    </form>
-  </main>
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${role}`;
+    bubble.textContent = content;
 
-  <script>
-    const chatBox = document.getElementById('chat');
-    const form = document.getElementById('chat-form');
-    const input = document.getElementById('messageInput');
-    let conversation = [];
-
-    function addMessage(content, role) {
-      const row = document.createElement('div');
-      row.className = `message-row ${role}`;
-
-      const avatar = document.createElement('div');
-      avatar.className = `avatar ${role}`;
-
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${role}`;
-      bubble.textContent = content;
-
-      if (role === 'assistant') {
-        row.appendChild(avatar);
-        row.appendChild(bubble);
-      } else {
-        row.appendChild(bubble);
-        row.appendChild(avatar);
-      }
-
-      chatBox.appendChild(row);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    if (role === 'assistant') {
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+    } else {
+      row.appendChild(bubble);
+      row.appendChild(avatar);
     }
 
-    async function sendMessage(message) {
-      conversation.push({ role: 'user', content: message });
-      addMessage(message, 'user');
+    chatBox.appendChild(row);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversation })
-        });
+  function updateMessage(tempId, newContent) {
+    const message = chatBox.querySelector(`[data-message-id="${tempId}"] .bubble`);
+    if (message) {
+      message.textContent = newContent;
+    }
+  }
 
-        const data = await res.json();
-        const reply = data.message;
+  function saveConversation() {
+    localStorage.setItem('mrETutorChat', JSON.stringify(conversation));
+  }
 
-        conversation.push({ role: 'assistant', content: reply });
-        addMessage(reply, 'assistant');
-      } catch (err) {
-        addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
+  async function sendMessage(message) {
+    conversation.push({ role: 'user', content: message });
+    addMessage(message, 'user');
+    saveConversation();
+
+    const tempId = `msg-${Date.now()}`;
+    addMessage("✍️ Mr. E is thinking...", 'assistant', tempId);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation })
+      });
+
+      const data = await res.json();
+      const reply = data.message;
+
+      conversation.push({ role: 'assistant', content: reply });
+      updateMessage(tempId, reply);
+      saveConversation();
+    } catch (err) {
+      updateMessage(tempId, "⚠️ Something went wrong. Please try again later.");
+    }
+  }
+
+  // Restore conversation on load
+  window.onload = () => {
+    if (conversation.length > 0) {
+      for (const msg of conversation) {
+        addMessage(msg.content, msg.role);
       }
     }
+  };
 
-    // Trigger intro on page load
-    window.onload = () => {
-      const intro = "Hello";
-      conversation.push({ role: 'user', content: intro });
-      sendMessage(intro);
-    };
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = input.value.trim();
-      if (!message) return;
-      input.value = '';
-      sendMessage(message);
-    });
-  </script>
-
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = '';
+    sendMessage(message);
+  });
+</script>
 </body>
 </html>
