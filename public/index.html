@@ -14,7 +14,6 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      overflow: hidden;
     }
     header {
       background-color: #2563eb;
@@ -37,7 +36,6 @@
       margin: 0 auto;
       width: 100%;
       padding: 1rem;
-      overflow: hidden;
     }
     #chat {
       flex: 1;
@@ -97,9 +95,8 @@
     form {
       width: 100%;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
       margin-top: 1rem;
       background: #fff;
       border-radius: 16px;
@@ -121,6 +118,11 @@
     #controls {
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .top-buttons {
+      display: flex;
       gap: 0.5rem;
     }
     button {
@@ -137,28 +139,40 @@
     }
     .clear-button {
       background-color: orange;
-      padding: 0.5rem 0.6rem;
+      padding: 0.5rem 1rem;
       font-size: 0.85rem;
-      width: 60%;
+      margin-top: 0.3rem;
+      width: 100%;
     }
     .clear-button:hover { background-color: darkorange; }
     #micButton {
-      padding: 0.6rem;
+      padding: 0.5rem;
       width: 42px;
-      font-size: 1.1rem;
-      text-align: center;
+      font-size: 1.2rem;
+    }
+    #speakToggleWrapper {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.85rem;
+      color: white;
     }
   </style>
 </head>
 <body>
   <header>Mr. E – Your AI Tutor <span style="font-size: 0.8rem;">NG</span></header>
+  <div id="speakToggleWrapper">
+    <label><input type="checkbox" id="speakToggle"> 🔊 Mr. E Speaks</label>
+  </div>
   <main id="wrapper">
     <div id="chat"></div>
     <form id="chat-form">
       <textarea id="messageInput" placeholder="Type your message..." required></textarea>
       <div id="controls">
-        <button type="submit">Send</button>
-        <button type="button" id="micButton">🎤</button>
+        <div class="top-buttons">
+          <button type="submit">Send</button>
+          <button type="button" id="micButton">🎤</button>
+        </div>
         <button type="button" class="clear-button" id="clearButton">Clear Chat</button>
       </div>
     </form>
@@ -169,6 +183,7 @@
     const input = document.getElementById('messageInput');
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
+    const speakToggle = document.getElementById('speakToggle');
     let conversation = [];
     let studentName = '';
 
@@ -195,8 +210,7 @@
     }
 
     function speak(text) {
-      const toggle = false;
-      if (!toggle) return;
+      if (!speakToggle.checked) return;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-NG';
       utterance.pitch = 1;
