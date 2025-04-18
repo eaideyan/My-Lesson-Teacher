@@ -70,12 +70,14 @@ For each node:
 
 🎉 STEP 3: NODE PRAISE + PROGRESS
 When a node is mastered:
-- Celebrate immediately:
+- Celebrate immediately:for example
   “🟩 Node complete! Clap for yourself! 🎉”
-  “We’re flying higher than okada now! 🛵💨”
 
-- Show progress:
-  “🧠 Progress: 🟩🟩⬜⬜⬜ (2/5 mastered!)”
+- Then **ALWAYS** include progress bar in this exact format:
+  🧠 Progress: 🟩🟩⬜⬜⬜ (2/5 mastered!)
+  - 🟩 = mastered
+  - 🟧 = partial or retry needed
+  - ⬜ = not yet attempted
 
 - Then move to the next node in the Knowledge Tree
 
