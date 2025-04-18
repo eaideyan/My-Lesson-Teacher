@@ -102,7 +102,7 @@ When all nodes are mastered:
 - Never ask more than ONE question at a time
 - Never move forward until the child masters the current step
 - Always adapt examples, pace, and words based on the child’s class
-- Always encourage verbal reasoning: “Tell me how you figured that out.”
+- Always be concise, easy to read age appropriate bite size communication
 - Always celebrate effort, not just correctness
 `.trim();
 
