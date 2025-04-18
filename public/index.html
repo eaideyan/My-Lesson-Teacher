@@ -22,7 +22,6 @@
       text-align: center;
       font-size: 1.5rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
       position: sticky;
       top: 0;
       z-index: 1000;
@@ -43,7 +42,7 @@
       overflow-y: auto;
       padding: 1rem 0.5rem;
       display: flex;
-      flex-direction: column;
+      flex-direction: column-reverse;
       gap: 0.75rem;
       border: 1px solid #ddd;
       border-radius: 16px;
@@ -74,10 +73,20 @@
       font-size: 1rem;
       line-height: 1.5;
       white-space: pre-wrap;
+      background-color: #f0f4ff;
+      position: relative;
     }
     .bubble.user {
-      background-color: #c7f0d8;
+      background-color: #dbeafe;
       border-bottom-right-radius: 0;
+    }
+    .bubble.user::after {
+      content: var(--student-name, 'You');
+      font-size: 0.75rem;
+      color: #1e3a8a;
+      position: absolute;
+      bottom: -1.2rem;
+      right: 1rem;
     }
     .bubble.assistant {
       background-color: #e0e7ff;
@@ -108,6 +117,7 @@
       min-height: 3.5rem;
       overflow-y: auto;
       line-height: 1.5rem;
+      background: #f9fbff;
     }
     button {
       background-color: #2563eb;
@@ -121,15 +131,21 @@
     button:hover { background-color: #1e40af; }
     #controls {
       display: flex;
+      flex-direction: column;
       gap: 0.5rem;
-      align-items: center;
+      align-items: flex-end;
     }
     .clear-button {
-      background-color: #f87171;
-      margin-top: 0.5rem;
+      background-color: orange;
     }
     .clear-button:hover {
-      background-color: #dc2626;
+      background-color: darkorange;
+    }
+    .speak-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 0.9rem;
     }
     @media (max-width: 600px) {
       main#wrapper { max-width: 100%; padding: 0.5rem; }
@@ -139,14 +155,17 @@
 </head>
 <body>
   <header>Mr. E – Your AI Tutor 🇳🇬</header>
+  <label class="speak-toggle">
+    <input type="checkbox" id="speakToggle" /> 🔊 Mr. E Speaks
+  </label>
   <main id="wrapper">
     <div id="chat"></div>
     <form id="chat-form">
       <textarea id="messageInput" placeholder="Type your message..." required></textarea>
       <div id="controls">
-        <button type="button" id="micButton">🎤</button>
-        <button type="submit">Send</button>
-        <button type="button" class="clear-button" id="clearButton">🗑️ Clear Chat</button>
+        <button type="button" id="micButton">Mic</button>
+        <button type="submit">send</button>
+        <button type="button" class="clear-button" id="clearButton">Clear Chat</button>
       </div>
     </form>
   </main>
@@ -157,6 +176,7 @@
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
     let conversation = JSON.parse(localStorage.getItem('mrETutorChat')) || [];
+    let studentName = localStorage.getItem('mrEStudentName') || 'You';
 
     function addMessage(content, role, tempId = null) {
       const row = document.createElement('div');
@@ -167,6 +187,7 @@
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
       bubble.textContent = content;
+      if (role === 'user') bubble.style.setProperty('--student-name', `'${studentName}'`);
       if (role === 'assistant') {
         row.appendChild(avatar);
         row.appendChild(bubble);
@@ -174,8 +195,7 @@
         row.appendChild(bubble);
         row.appendChild(avatar);
       }
-      chatBox.appendChild(row);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      chatBox.insertBefore(row, chatBox.firstChild);
     }
 
     function updateMessage(tempId, newContent) {
@@ -188,6 +208,8 @@
     }
 
     function speak(text) {
+      const speakToggle = document.getElementById('speakToggle');
+      if (!speakToggle.checked) return;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-NG';
       utterance.pitch = 1;
@@ -196,6 +218,13 @@
     }
 
     async function sendMessage(message) {
+      if (conversation.length === 0 && message.toLowerCase().includes('my name is')) {
+        const match = message.match(/my name is (\w+)/i);
+        if (match) {
+          studentName = match[1];
+          localStorage.setItem('mrEStudentName', studentName);
+        }
+      }
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
       saveConversation();
@@ -220,7 +249,7 @@
 
     window.onload = () => {
       if (conversation.length > 0) {
-        for (const msg of conversation) {
+        for (const msg of [...conversation].reverse()) {
           addMessage(msg.content, msg.role);
         }
       }
@@ -243,7 +272,9 @@
 
     clearButton.addEventListener('click', () => {
       localStorage.removeItem('mrETutorChat');
+      localStorage.removeItem('mrEStudentName');
       conversation = [];
+      studentName = 'You';
       chatBox.innerHTML = '';
     });
 
@@ -259,13 +290,15 @@
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         input.value = transcript;
-        micButton.textContent = '🎤';
+        sendMessage(transcript);
+        input.value = '';
+        micButton.textContent = 'Mic';
       };
       recognition.onerror = () => {
-        micButton.textContent = '🎤';
+        micButton.textContent = 'Mic';
       };
       recognition.onend = () => {
-        micButton.textContent = '🎤';
+        micButton.textContent = 'Mic';
       };
     } else {
       micButton.disabled = true;
