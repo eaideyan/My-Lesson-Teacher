@@ -248,29 +248,21 @@
     let studentName = '';
     let thinkingRow = null;
 
-function addMessage(content, role) {
-  const row = document.createElement('div');
-  row.className = `message-row ${role}`;
-
-  const avatar = document.createElement('div');
-  avatar.className = `avatar ${role}`;
-
-  const bubble = document.createElement('div');
-  bubble.className = `bubble ${role}`;
-  bubble.textContent = content;
-
-  if (role === 'user') {
-    bubble.setAttribute('data-name', studentName || '');
-  }
-
-  row.appendChild(role === 'assistant' ? avatar : bubble);
-  row.appendChild(role === 'assistant' ? bubble : avatar);
-  chatBox.appendChild(row);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  return row; // ✅ Return the DOM node
-}
-
+    function addMessage(content, role) {
+      const row = document.createElement('div');
+      row.className = `message-row ${role}`;
+      const avatar = document.createElement('div');
+      avatar.className = `avatar ${role}`;
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${role}`;
+      bubble.textContent = content;
+      if (role === 'user') bubble.setAttribute('data-name', studentName || '');
+      row.appendChild(role === 'assistant' ? avatar : bubble);
+      row.appendChild(role === 'assistant' ? bubble : avatar);
+      chatBox.appendChild(row);
+      chatBox.scrollTop = chatBox.scrollHeight;
+       return row; // ✅ Return the DOM node
+    }
 
     function speak(text) {
       if (!speakToggle.checked) return;
