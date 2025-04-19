@@ -316,9 +316,11 @@ function handleAssistantReply(reply) {
 }
 
 function updateKnowledgeTreeInSidebar(treeText) {
-  const sidebar = document.getElementById('knowledgeContent');
   const header = document.getElementById('knowledgeHeader');
-  if (!sidebar || !header) return;
+  const about = document.getElementById('aboutMrE');
+  const treeContainer = document.getElementById('treeContents');
+
+  if (!header || !about || !treeContainer) return;
 
   const lines = treeText
     .split('\n')
@@ -327,23 +329,16 @@ function updateKnowledgeTreeInSidebar(treeText) {
     .join('');
 
   if (lines) {
-    // Show the Knowledge Tree header
+    // Show the tree title and hide the intro
     header.style.display = 'block';
+    about.style.display = 'none';
 
-    // Update the knowledge content with tree and progress bar
-    sidebar.innerHTML = `
-      <ol style="padding-left: 1rem;">${lines}</ol>
-      <p id="progressVisual" style="margin-top: 1rem;">🧠 Progress: ⬜⬜⬜⬜⬜ (0/5 mastered!)</p>
-      <p id="progressFeedback" style="font-size: 0.85rem; color: #2563eb;">Let's begin your learning journey! 🚀</p>
-    `;
+    // Add the ordered list to the tree container
+    treeContainer.innerHTML = `<ol style="padding-left: 1rem;">${lines}</ol>`;
+
+    // Reset progress bar to empty
+    updateProgressBar(); 
   }
-}
-
-function updateProgressBarFromMessage(message) {
-  const match = message.match(/🧠 Progress: (.*?) \((\d+)\/5 mastered!\)/);
-  if (!match) return;
-  const [_, state, count] = match;
-  updateProgressBar(state, parseInt(count));
 }
 
 function updateProgressBar(state = '⬜⬜⬜⬜⬜', count = 0) {
@@ -356,10 +351,19 @@ function updateProgressBar(state = '⬜⬜⬜⬜⬜', count = 0) {
 
   if (feedbackEl) {
     feedbackEl.textContent =
-      count === 0 ? "Let's begin your learning journey! 🚀"
-      : count === 5 ? "Woohoo! 🎉 You've completed the topic!"
-      : "Great job! Keep going, you're doing well! 🌟";
+      count === 0
+        ? "Let's begin your learning journey! 🚀"
+        : count === 5
+        ? "Woohoo! 🎉 You've completed the topic!"
+        : "Great job! Keep going, you're doing well! 🌟";
   }
+}
+
+function updateProgressBarFromMessage(message) {
+  const match = message.match(/🧠 Progress: (.*?) \((\d+)\/5 mastered!\)/);
+  if (!match) return;
+  const [_, state, count] = match;
+  updateProgressBar(state, parseInt(count));
 }
 
     // ----- Load Initial Prompt -----
