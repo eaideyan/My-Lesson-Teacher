@@ -7,98 +7,82 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-
     html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
       font-family: 'Nunito', sans-serif;
       background-color: #f5f7fa;
-      height: 100%;
-      overflow: hidden;
     }
-
     body {
       display: flex;
       flex-direction: column;
     }
-
     header {
       background-color: #2563eb;
       color: white;
-      padding: 1rem;
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 700;
+      padding: 1rem;
       text-align: center;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
     }
-
     #speakToggleWrapper {
       position: fixed;
       top: 1rem;
       right: 1rem;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       color: white;
-      z-index: 1000;
+      z-index: 1001;
     }
 
     main {
       display: flex;
-      gap: 1rem;
-      padding: 5rem 1rem 6rem;
-      height: calc(100vh - 5rem);
-    }
-
-    .sidebar {
       flex: 1;
-      max-width: 200px;
-      padding: 1rem;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      justify-content: start;
-      height: fit-content;
-      position: sticky;
-      top: 5rem;
+      margin-top: 4.5rem;
+      padding-bottom: 7rem;
+      height: calc(100vh - 4.5rem - 7rem);
     }
 
-    #chat-container {
+    .sidebar, .visuals {
+      flex: 1;
+      padding: 1rem;
+      max-width: 260px;
+    }
+    .chat-column {
       flex: 2.5;
       display: flex;
       flex-direction: column;
-      height: 100%;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 16px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+    }
+    .card h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: #1e3a8a;
     }
 
     #chat {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      padding-bottom: 5rem;
     }
-
     .message-row {
       display: flex;
       align-items: flex-start;
     }
-
-    .message-row.user {
-      justify-content: flex-end;
-    }
-
+    .message-row.user { justify-content: flex-end; }
     .avatar {
       width: 36px;
       height: 36px;
@@ -106,30 +90,26 @@
       margin: 0 6px;
       flex-shrink: 0;
     }
-
     .user .avatar { background-color: #bae6fd; }
-
     .assistant .avatar {
       background-image: url('https://cdn-icons-png.flaticon.com/512/1995/1995471.png');
       background-size: cover;
       background-position: center;
     }
-
     .bubble {
       max-width: 75%;
       padding: 0.6rem 0.9rem;
       border-radius: 16px;
       font-size: 1rem;
+      background-color: #e0e7ff;
       line-height: 1.45;
       white-space: pre-wrap;
     }
-
     .bubble.user {
       background-color: #c7f0d8;
       border-bottom-right-radius: 0;
       position: relative;
     }
-
     .bubble.user::after {
       content: attr(data-name);
       font-size: 0.75rem;
@@ -139,27 +119,23 @@
       right: 1rem;
     }
 
-    .bubble.assistant {
-      background-color: #e0e7ff;
-      border-bottom-left-radius: 0;
-    }
-
-    form {
+    #chat-form {
       position: fixed;
       bottom: 0;
-      left: 0;
-      right: 0;
-      max-width: 1200px;
-      margin: auto;
+      left: 0; right: 0;
+      width: 100%;
       display: flex;
-      justify-content: space-between;
-      padding: 0.5rem 1rem;
+      justify-content: center;
       background: #fff;
-      border-top: 1px solid #ddd;
-      align-items: flex-end;
+      padding: 1rem;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    }
+    #chat-form .form-inner {
+      display: flex;
+      width: 100%;
+      max-width: 800px;
       gap: 0.5rem;
     }
-
     textarea {
       flex: 1;
       padding: 0.7rem 1rem;
@@ -167,93 +143,88 @@
       border-radius: 12px;
       border: 1px solid #ccc;
       resize: none;
-      line-height: 1.5rem;
+      height: 3rem;
     }
-
     #controls {
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 0.4rem;
+      justify-content: space-between;
     }
-
     .top-buttons {
       display: flex;
       gap: 0.4rem;
     }
-
     button {
-      background-color: #2563eb;
-      color: white;
-      padding: 0.6rem 1rem;
-      font-size: 1rem;
+      padding: 0.6rem 0.8rem;
       border: none;
       border-radius: 10px;
+      font-size: 1rem;
       cursor: pointer;
     }
-
-    button:hover { background-color: #1e40af; }
-
+    .send-button {
+      background: #2563eb;
+      color: white;
+    }
+    .mic-button {
+      background: #2563eb;
+      color: white;
+    }
     .clear-button {
-      background-color: orange;
+      background: orange;
+      color: white;
       font-size: 0.85rem;
-      width: 100%;
-      padding: 0.5rem 1rem;
     }
 
-    .clear-button:hover { background-color: darkorange; }
-
-    #micButton {
-      width: 42px;
-      height: 42px;
-      font-size: 1.2rem;
-      padding: 0.5rem;
-    }
-
-    @media (max-width: 768px) {
+    @media (max-width: 800px) {
       main {
         flex-direction: column;
-        height: auto;
       }
-      .sidebar {
-        display: none;
+      .sidebar, .visuals {
+        max-width: none;
       }
     }
   </style>
 </head>
 <body>
-  <header>Mr. E – Your AI Tutor <span style="font-size: 0.8rem;">NG</span></header>
+  <header>Mr. E – Your AI Tutor<span style="font-size: 0.8rem;"> NG</span></header>
   <div id="speakToggleWrapper">
     <label><input type="checkbox" id="speakToggle"> 🔊 Mr. E Speaks</label>
   </div>
 
   <main>
-    <aside class="sidebar" id="left-sidebar">
-      <h3>📘 Knowledge Tree</h3>
-      <div id="knowledgeTreeContent">
-        <p><strong>About Mr. E</strong></p>
-        <p>Your friendly Nigerian AI tutor! 🌟<br> I’ll help you learn one step at a time.</p>
+    <aside class="sidebar">
+      <div class="card" id="leftCard">
+        <h3>📘 Knowledge Tree</h3>
+        <div id="treeContent">
+          <strong>About Mr. E</strong><br>
+          Your friendly Nigerian AI tutor! 🌟<br>I’ll help you learn one step at a time.
+        </div>
       </div>
     </aside>
 
-    <section id="chat-container">
+    <section class="chat-column">
       <div id="chat"></div>
     </section>
 
-    <aside class="sidebar" id="right-sidebar">
-      <h3>🔍 Topic visuals</h3>
-      <p>Coming soon.</p>
+    <aside class="visuals">
+      <div class="card">
+        <h3>🔍 Topic visuals</h3>
+        Coming soon.
+      </div>
     </aside>
   </main>
 
   <form id="chat-form">
-    <textarea id="messageInput" placeholder="Type your message..." required></textarea>
-    <div id="controls">
-      <div class="top-buttons">
-        <button type="submit">Send</button>
-        <button type="button" id="micButton">🎤</button>
+    <div class="form-inner">
+      <textarea id="messageInput" placeholder="Type your message..." required></textarea>
+      <div id="controls">
+        <div class="top-buttons">
+          <button type="submit" class="send-button">Send</button>
+          <button type="button" class="mic-button" id="micButton">🎤</button>
+        </div>
+        <button type="button" class="clear-button" id="clearButton">🗑️ Clear</button>
       </div>
-      <button type="button" class="clear-button" id="clearButton">🗑️ Clear</button>
     </div>
   </form>
 
@@ -264,7 +235,8 @@
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
     const speakToggle = document.getElementById('speakToggle');
-    const leftSidebar = document.getElementById('knowledgeTreeContent');
+    const treeContent = document.getElementById('treeContent');
+
     let conversation = [];
     let studentName = '';
     let thinkingRow = null;
@@ -277,16 +249,8 @@
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
       bubble.textContent = content;
-      if (role === 'user') {
-        bubble.setAttribute('data-name', studentName || '');
-      }
-      if (role === 'assistant') {
-        row.appendChild(avatar);
-        row.appendChild(bubble);
-      } else {
-        row.appendChild(bubble);
-        row.appendChild(avatar);
-      }
+      if (role === 'user') bubble.setAttribute('data-name', studentName || '');
+      role === 'assistant' ? row.append(avatar, bubble) : row.append(bubble, avatar);
       chatBox.appendChild(row);
       chatBox.scrollTop = chatBox.scrollHeight;
       return row;
@@ -301,13 +265,16 @@
       speechSynthesis.speak(utterance);
     }
 
+    function updateKnowledgeTree(newTreeHtml) {
+      treeContent.innerHTML = newTreeHtml;
+    }
+
     async function sendMessage(message) {
       if (!studentName && /my name is (\w+)/i.test(message)) {
         studentName = message.match(/my name is (\w+)/i)[1];
       }
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
-
       thinkingRow = addMessage('💭 Mr. E is thinking...', 'assistant');
 
       try {
@@ -318,37 +285,29 @@
         });
         const data = await res.json();
         let reply = data.message;
-        reply = reply.replace(/Do you understand\?.*?/gi, 'Do you understand?');
         conversation.push({ role: 'assistant', content: reply });
-
         if (thinkingRow) thinkingRow.remove();
-        addMessage(reply, 'assistant');
-        speak(reply);
 
-        // Auto-detect and update knowledge tree
-        if (reply.includes('Knowledge Tree:')) {
-          const tree = reply.split('Knowledge Tree:')[1].split('\n').slice(0, 6).join('<br>');
-          leftSidebar.innerHTML = `<h3>📘 Knowledge Tree</h3><p>${tree}</p>`;
+        // Extract tree if any
+        if (/Knowledge Tree[\s\S]+?(?=\n\n|$)/i.test(reply)) {
+          const treeMatch = reply.match(/🧠 Knowledge Tree:[\s\S]*?(?=\n\n|$)/);
+          if (treeMatch) updateKnowledgeTree(treeMatch[0].replace('🧠 ', ''));
         }
 
-      } catch (err) {
+        addMessage(reply, 'assistant');
+        speak(reply);
+      } catch {
         if (thinkingRow) thinkingRow.remove();
-        addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
+        addMessage("⚠️ Something went wrong. Please try again.", 'assistant');
       }
     }
 
-    window.onload = () => {
-      const intro = "Welcome to Your AI Tutor! 🌟 I’m Mr. E, your lesson teacher!\nWhat’s your name, grade, and what topic would you like to learn today?";
-      conversation.push({ role: 'assistant', content: intro });
-      addMessage(intro, 'assistant');
-    };
-
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const message = input.value.trim();
-      if (!message) return;
+      const msg = input.value.trim();
+      if (!msg) return;
       input.value = '';
-      sendMessage(message);
+      sendMessage(msg);
     });
 
     input.addEventListener('keydown', (e) => {
@@ -360,11 +319,20 @@
 
     clearButton.addEventListener('click', () => {
       conversation = [];
-      chatBox.innerHTML = '';
       studentName = '';
-      leftSidebar.innerHTML = `<p><strong>About Mr. E</strong></p><p>Your friendly Nigerian AI tutor! 🌟<br> I’ll help you learn one step at a time.</p>`;
+      chatBox.innerHTML = '';
+      treeContent.innerHTML = `
+        <strong>About Mr. E</strong><br>
+        Your friendly Nigerian AI tutor! 🌟<br>I’ll help you learn one step at a time.
+      `;
       window.onload();
     });
+
+    window.onload = () => {
+      const intro = "Welcome to Your AI Tutor! 🌟 I’m Mr. E, your lesson teacher!\nWhat’s your name, grade, and what topic would you like to learn today?";
+      conversation.push({ role: 'assistant', content: intro });
+      addMessage(intro, 'assistant');
+    };
 
     const recognition = ('webkitSpeechRecognition' in window) ? new webkitSpeechRecognition() : null;
     if (recognition) {
@@ -396,7 +364,7 @@
       recognition.onend = () => { micButton.textContent = '🎤'; };
     } else {
       micButton.disabled = true;
-      micButton.title = "Voice input not supported on this browser.";
+      micButton.title = "Voice input not supported.";
     }
   </script>
 </body>
