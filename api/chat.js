@@ -129,7 +129,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'gpt-4',
         messages: history,
-        temperature: 0.7,
+        temperature: 0.5,
       }),
     });
 
