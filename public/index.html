@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mr. E – Your AI Tutor 🇳🇬</title>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
     html, body {
+      font-family: 'Nunito', sans-serif;
+      background-color: #f5f7fa;
       margin: 0;
       padding: 0;
       height: 100%;
-      font-family: 'Nunito', sans-serif;
-      background-color: #f5f7fa;
     }
     body {
       display: flex;
@@ -21,62 +21,64 @@
     header {
       background-color: #2563eb;
       color: white;
-      font-size: 1.5rem;
-      font-weight: 700;
       padding: 1rem;
       text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
       position: fixed;
-      top: 0; left: 0; right: 0;
+      top: 0;
+      left: 0;
+      right: 0;
       z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     #speakToggleWrapper {
       position: fixed;
       top: 1rem;
       right: 1rem;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: white;
       z-index: 1001;
     }
-
-    main {
+    main#wrapper {
       display: flex;
-      flex: 1;
-      margin-top: 4.5rem;
+      flex-direction: row;
+      justify-content: center;
+      padding-top: 5rem;
       padding-bottom: 7rem;
-      height: calc(100vh - 4.5rem - 7rem);
+      max-width: 1200px;
+      margin: auto;
+      width: 100%;
+      gap: 1rem;
     }
-
-    .sidebar, .visuals {
-      flex: 1;
+    aside {
+      width: 18%;
+      background: white;
+      border-radius: 16px;
       padding: 1rem;
-      max-width: 260px;
-    }
-    .chat-column {
-      flex: 2.5;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      font-size: 0.95rem;
       display: flex;
       flex-direction: column;
-      padding: 1rem;
+      align-items: flex-start;
     }
-
-    .card {
-      background: #fff;
-      padding: 1rem;
+    #chatBoxWrapper {
+      flex: 2.5;
+      background: white;
       border-radius: 16px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.08);
-      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
     }
-    .card h3 {
-      margin-top: 0;
-      font-size: 1.1rem;
-      color: #1e3a8a;
-    }
-
     #chat {
-      flex: 1;
+      flex-grow: 1;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      padding-right: 0.5rem;
     }
     .message-row {
       display: flex;
@@ -101,9 +103,9 @@
       padding: 0.6rem 0.9rem;
       border-radius: 16px;
       font-size: 1rem;
-      background-color: #e0e7ff;
       line-height: 1.45;
       white-space: pre-wrap;
+      transition: all 0.3s ease;
     }
     .bubble.user {
       background-color: #c7f0d8;
@@ -118,113 +120,106 @@
       bottom: -1.2rem;
       right: 1rem;
     }
-
-    #chat-form {
+    .bubble.assistant {
+      background-color: #e0e7ff;
+      border-bottom-left-radius: 0;
+    }
+    #visuals {
+      width: 18%;
+      background: white;
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      font-size: 0.95rem;
+    }
+    form {
       position: fixed;
       bottom: 0;
-      left: 0; right: 0;
-      width: 100%;
-      display: flex;
-      justify-content: center;
+      left: 0;
+      right: 0;
+      max-width: 1200px;
+      margin: auto;
       background: #fff;
-      padding: 1rem;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    }
-    #chat-form .form-inner {
+      border-top: 1px solid #ddd;
+      padding: 0.6rem 1rem;
       display: flex;
-      width: 100%;
-      max-width: 800px;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      align-items: center;
+      border-radius: 12px 12px 0 0;
     }
     textarea {
       flex: 1;
-      padding: 0.7rem 1rem;
       font-size: 1rem;
       border-radius: 12px;
       border: 1px solid #ccc;
-      resize: none;
+      padding: 0.6rem 1rem;
       height: 3rem;
+      resize: none;
     }
     #controls {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
-      justify-content: space-between;
+      align-items: center;
+      gap: 0.3rem;
     }
     .top-buttons {
       display: flex;
       gap: 0.4rem;
     }
     button {
-      padding: 0.6rem 0.8rem;
+      background-color: #2563eb;
+      color: white;
       border: none;
       border-radius: 10px;
+      padding: 0.6rem 1rem;
       font-size: 1rem;
       cursor: pointer;
     }
-    .send-button {
-      background: #2563eb;
-      color: white;
-    }
-    .mic-button {
-      background: #2563eb;
-      color: white;
-    }
     .clear-button {
-      background: orange;
-      color: white;
+      background-color: orange;
+      width: 100%;
       font-size: 0.85rem;
+      padding: 0.3rem 0.8rem;
     }
-
-    @media (max-width: 800px) {
-      main {
-        flex-direction: column;
-      }
-      .sidebar, .visuals {
-        max-width: none;
-      }
+    @media (max-width: 768px) {
+      aside, #visuals { display: none; }
+      main#wrapper { flex-direction: column; align-items: stretch; padding: 1rem; }
     }
   </style>
 </head>
 <body>
-  <header>Mr. E – Your AI Tutor<span style="font-size: 0.8rem;"> NG</span></header>
+  <header>Mr. E – Your AI Tutor<sup>NG</sup></header>
   <div id="speakToggleWrapper">
     <label><input type="checkbox" id="speakToggle"> 🔊 Mr. E Speaks</label>
   </div>
 
-  <main>
-    <aside class="sidebar">
-      <div class="card" id="leftCard">
-        <h3>📘 Knowledge Tree</h3>
-        <div id="treeContent">
-          <strong>About Mr. E</strong><br>
-          Your friendly Nigerian AI tutor! 🌟<br>I’ll help you learn one step at a time.
-        </div>
+  <main id="wrapper">
+    <aside id="leftSidebar">
+      <h3>📘 Knowledge Tree</h3>
+      <div id="knowledgeContent">
+        <p><strong>About Mr. E</strong></p>
+        <p>Your friendly Nigerian AI tutor! 🌟<br/> I’ll help you learn one step at a time.</p>
       </div>
     </aside>
 
-    <section class="chat-column">
+    <div id="chatBoxWrapper">
       <div id="chat"></div>
-    </section>
+    </div>
 
-    <aside class="visuals">
-      <div class="card">
-        <h3>🔍 Topic visuals</h3>
-        Coming soon.
-      </div>
+    <aside id="visuals">
+      <h3>🔍 Topic visuals</h3>
+      <p>Coming soon.</p>
     </aside>
   </main>
 
   <form id="chat-form">
-    <div class="form-inner">
-      <textarea id="messageInput" placeholder="Type your message..." required></textarea>
-      <div id="controls">
-        <div class="top-buttons">
-          <button type="submit" class="send-button">Send</button>
-          <button type="button" class="mic-button" id="micButton">🎤</button>
-        </div>
-        <button type="button" class="clear-button" id="clearButton">🗑️ Clear</button>
+    <textarea id="messageInput" placeholder="Type your message..." required></textarea>
+    <div id="controls">
+      <div class="top-buttons">
+        <button type="submit">Send</button>
+        <button type="button" id="micButton">🎤</button>
       </div>
+      <button type="button" class="clear-button" id="clearButton">🗑️ Clear</button>
     </div>
   </form>
 
@@ -235,11 +230,19 @@
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
     const speakToggle = document.getElementById('speakToggle');
-    const treeContent = document.getElementById('treeContent');
-
+    const knowledgeContent = document.getElementById('knowledgeContent');
     let conversation = [];
     let studentName = '';
     let thinkingRow = null;
+
+    function formatKnowledgeTree(text) {
+      const match = text.match(/Knowledge Tree:\s*([\s\S]*)/);
+      if (!match) return text;
+      const lines = match[1].split(/\d+\.\s+/).filter(l => l.trim());
+      const formatted = `<ol>${lines.map(line => `<li>${line.trim()}</li>`).join('')}</ol>`;
+      knowledgeContent.innerHTML = `<h3>📘 Knowledge Tree</h3>${formatted}`;
+      return text.replace(match[0], `<strong>📚 Knowledge Tree:</strong><br>${formatted}`);
+    }
 
     function addMessage(content, role) {
       const row = document.createElement('div');
@@ -248,9 +251,16 @@
       avatar.className = `avatar ${role}`;
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
-      bubble.textContent = content;
+      if (role === 'assistant') content = formatKnowledgeTree(content);
+      bubble.innerHTML = content;
       if (role === 'user') bubble.setAttribute('data-name', studentName || '');
-      role === 'assistant' ? row.append(avatar, bubble) : row.append(bubble, avatar);
+      if (role === 'assistant') {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+      } else {
+        row.appendChild(bubble);
+        row.appendChild(avatar);
+      }
       chatBox.appendChild(row);
       chatBox.scrollTop = chatBox.scrollHeight;
       return row;
@@ -258,15 +268,11 @@
 
     function speak(text) {
       if (!speakToggle.checked) return;
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1F6FF}]/gu, ''));
       utterance.lang = 'en-NG';
       utterance.pitch = 1;
       utterance.rate = 1;
       speechSynthesis.speak(utterance);
-    }
-
-    function updateKnowledgeTree(newTreeHtml) {
-      treeContent.innerHTML = newTreeHtml;
     }
 
     async function sendMessage(message) {
@@ -275,6 +281,7 @@
       }
       conversation.push({ role: 'user', content: message });
       addMessage(message, 'user');
+
       thinkingRow = addMessage('💭 Mr. E is thinking...', 'assistant');
 
       try {
@@ -285,29 +292,29 @@
         });
         const data = await res.json();
         let reply = data.message;
+        reply = reply.replace(/Do you understand\?.*?/gi, 'Do you understand?');
         conversation.push({ role: 'assistant', content: reply });
         if (thinkingRow) thinkingRow.remove();
-
-        // Extract tree if any
-        if (/Knowledge Tree[\s\S]+?(?=\n\n|$)/i.test(reply)) {
-          const treeMatch = reply.match(/🧠 Knowledge Tree:[\s\S]*?(?=\n\n|$)/);
-          if (treeMatch) updateKnowledgeTree(treeMatch[0].replace('🧠 ', ''));
-        }
-
         addMessage(reply, 'assistant');
         speak(reply);
-      } catch {
+      } catch (err) {
         if (thinkingRow) thinkingRow.remove();
-        addMessage("⚠️ Something went wrong. Please try again.", 'assistant');
+        addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
       }
     }
 
+    window.onload = () => {
+      const intro = "Welcome to Your AI Tutor! 🌟 I’m Mr. E, your lesson teacher!\nWhat’s your name, grade, and what topic would you like to learn today?";
+      conversation.push({ role: 'assistant', content: intro });
+      addMessage(intro, 'assistant');
+    };
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const msg = input.value.trim();
-      if (!msg) return;
+      const message = input.value.trim();
+      if (!message) return;
       input.value = '';
-      sendMessage(msg);
+      sendMessage(message);
     });
 
     input.addEventListener('keydown', (e) => {
@@ -319,53 +326,11 @@
 
     clearButton.addEventListener('click', () => {
       conversation = [];
-      studentName = '';
       chatBox.innerHTML = '';
-      treeContent.innerHTML = `
-        <strong>About Mr. E</strong><br>
-        Your friendly Nigerian AI tutor! 🌟<br>I’ll help you learn one step at a time.
-      `;
+      studentName = '';
+      knowledgeContent.innerHTML = `<p><strong>About Mr. E</strong></p><p>Your friendly Nigerian AI tutor! 🌟<br/> I’ll help you learn one step at a time.</p>`;
       window.onload();
     });
-
-    window.onload = () => {
-      const intro = "Welcome to Your AI Tutor! 🌟 I’m Mr. E, your lesson teacher!\nWhat’s your name, grade, and what topic would you like to learn today?";
-      conversation.push({ role: 'assistant', content: intro });
-      addMessage(intro, 'assistant');
-    };
-
-    const recognition = ('webkitSpeechRecognition' in window) ? new webkitSpeechRecognition() : null;
-    if (recognition) {
-      recognition.continuous = false;
-      recognition.lang = 'en-NG';
-      recognition.interimResults = true;
-
-      micButton.addEventListener('click', () => {
-        recognition.start();
-        micButton.textContent = '🎙️';
-      });
-
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            transcript += event.results[i][0].transcript;
-          }
-        }
-        if (transcript.trim()) {
-          input.value = transcript;
-          sendMessage(transcript);
-          input.value = '';
-        }
-        micButton.textContent = '🎤';
-      };
-
-      recognition.onerror = () => { micButton.textContent = '🎤'; };
-      recognition.onend = () => { micButton.textContent = '🎤'; };
-    } else {
-      micButton.disabled = true;
-      micButton.title = "Voice input not supported.";
-    }
   </script>
 </body>
 </html>
