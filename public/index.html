@@ -230,19 +230,9 @@
     const micButton = document.getElementById('micButton');
     const clearButton = document.getElementById('clearButton');
     const speakToggle = document.getElementById('speakToggle');
-    const knowledgeContent = document.getElementById('knowledgeContent');
     let conversation = [];
     let studentName = '';
     let thinkingRow = null;
-
-    function formatKnowledgeTree(text) {
-      const match = text.match(/Knowledge Tree:\s*([\s\S]*)/);
-      if (!match) return text;
-      const lines = match[1].split(/\d+\.\s+/).filter(l => l.trim());
-      const formatted = `<ol>${lines.map(line => `<li>${line.trim()}</li>`).join('')}</ol>`;
-      knowledgeContent.innerHTML = `<h3>📘 Knowledge Tree</h3>${formatted}`;
-      return text.replace(match[0], `<strong>📚 Knowledge Tree:</strong><br>${formatted}`);
-    }
 
     function addMessage(content, role) {
       const row = document.createElement('div');
@@ -251,24 +241,17 @@
       avatar.className = `avatar ${role}`;
       const bubble = document.createElement('div');
       bubble.className = `bubble ${role}`;
-      if (role === 'assistant') content = formatKnowledgeTree(content);
-      bubble.innerHTML = content;
+      bubble.textContent = content;
       if (role === 'user') bubble.setAttribute('data-name', studentName || '');
-      if (role === 'assistant') {
-        row.appendChild(avatar);
-        row.appendChild(bubble);
-      } else {
-        row.appendChild(bubble);
-        row.appendChild(avatar);
-      }
+      row.appendChild(role === 'assistant' ? avatar : bubble);
+      row.appendChild(role === 'assistant' ? bubble : avatar);
       chatBox.appendChild(row);
       chatBox.scrollTop = chatBox.scrollHeight;
-      return row;
     }
 
     function speak(text) {
       if (!speakToggle.checked) return;
-      const utterance = new SpeechSynthesisUtterance(text.replace(/[\u{1F300}-\u{1F6FF}]/gu, ''));
+      const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-NG';
       utterance.pitch = 1;
       utterance.rate = 1;
@@ -294,22 +277,64 @@
         let reply = data.message;
         reply = reply.replace(/Do you understand\?.*?/gi, 'Do you understand?');
         conversation.push({ role: 'assistant', content: reply });
+
         if (thinkingRow) thinkingRow.remove();
-        addMessage(reply, 'assistant');
-        speak(reply);
+        handleAssistantReply(reply);
       } catch (err) {
         if (thinkingRow) thinkingRow.remove();
         addMessage("⚠️ Something went wrong. Please try again later.", 'assistant');
       }
     }
 
+    // ----- UI Sync Functions -----
+    function handleAssistantReply(reply) {
+      addMessage(reply, 'assistant');
+      speak(reply);
+      const treeStart = reply.indexOf('Knowledge Tree:');
+      if (treeStart !== -1) {
+        const subTree = reply.slice(treeStart).split('\n').slice(1, 6).join('\n');
+        updateKnowledgeTreeInSidebar(subTree);
+        updateProgressBar(); // Reset on new topic
+      }
+      updateProgressBarFromMessage(reply);
+    }
+
+    function updateKnowledgeTreeInSidebar(treeText) {
+      const sidebar = document.getElementById('treeContents');
+      if (!sidebar) return;
+      const lines = treeText
+        .split('\n')
+        .filter(line => /^\d\./.test(line.trim()))
+        .map(line => `<li>${line.trim()}</li>`)
+        .join('');
+      if (lines) {
+        sidebar.innerHTML = `<ol style="padding-left: 1rem;">${lines}</ol>`;
+      }
+    }
+
+    function updateProgressBarFromMessage(message) {
+      const match = message.match(/🧠 Progress: (.*?) \((\d+)\/5 mastered!\)/);
+      if (!match) return;
+      const [_, state, count] = match;
+      updateProgressBar(state, parseInt(count));
+    }
+
+    function updateProgressBar(state = '⬜⬜⬜⬜⬜', count = 0) {
+      document.getElementById('progressVisual').textContent = `🧠 Progress: ${state} (${count}/5 mastered!)`;
+      document.getElementById('progressFeedback').textContent =
+        count === 0 ? "Let's begin your learning journey! 🚀"
+        : count === 5 ? "Woohoo! 🎉 You've completed the topic!"
+        : "Great job! Keep going, you're doing well! 🌟";
+    }
+
+    // ----- Load Initial Prompt -----
     window.onload = () => {
       const intro = "Welcome to Your AI Tutor! 🌟 I’m Mr. E, your lesson teacher!\nWhat’s your name, grade, and what topic would you like to learn today?";
       conversation.push({ role: 'assistant', content: intro });
       addMessage(intro, 'assistant');
     };
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
       const message = input.value.trim();
       if (!message) return;
@@ -317,7 +342,7 @@
       sendMessage(message);
     });
 
-    input.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         form.dispatchEvent(new Event('submit'));
@@ -328,9 +353,36 @@
       conversation = [];
       chatBox.innerHTML = '';
       studentName = '';
-      knowledgeContent.innerHTML = `<p><strong>About Mr. E</strong></p><p>Your friendly Nigerian AI tutor! 🌟<br/> I’ll help you learn one step at a time. Feel free to interrupt, ask questions and clarification, remember this space belongs to me and you and we can learn together, no stress, so relax lets start!</p>`;
       window.onload();
     });
+
+    // Voice Input (optional)
+    const recognition = ('webkitSpeechRecognition' in window) ? new webkitSpeechRecognition() : null;
+    if (recognition) {
+      recognition.lang = 'en-NG';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      micButton.addEventListener('click', () => { recognition.start(); micButton.textContent = '🎙️'; });
+      recognition.onresult = (e) => {
+        let transcript = '';
+        for (let i = e.resultIndex; i < e.results.length; ++i) {
+          if (e.results[i].isFinal) {
+            transcript += e.results[i][0].transcript;
+          }
+        }
+        if (transcript.trim()) {
+          input.value = transcript;
+          sendMessage(transcript);
+          input.value = '';
+        }
+        micButton.textContent = '🎤';
+      };
+      recognition.onerror = () => { micButton.textContent = '🎤'; };
+      recognition.onend = () => { micButton.textContent = '🎤'; };
+    } else {
+      micButton.disabled = true;
+      micButton.title = "Voice input not supported on this browser.";
+    }
   </script>
 </body>
 </html>
